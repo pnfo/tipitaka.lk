@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* color palette from <https://github.com/vuejs/theme> */
+
+:root {
+  --bg-color: #f0f0f0; /* Light mode background */
+  --text-color: #222;   /* Light mode text */
+  --hover-color: #cbd5e1;
+}
+
+.dark {
+  --bg-color: #222;      /* Dark mode background */
+  --text-color: #f0f0f0;  /* Dark mode text */
+  --hover-color: #374151;
+}
+
+
+body {
+  min-height: 100vh;
+  transition: color 0.3s, background-color 0.3s;
+  line-height: 1.6;
+
+  font-size: 18px;
+}
