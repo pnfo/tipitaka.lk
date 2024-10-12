@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-
-import { ref, onMounted } from 'vue'
+import TreeNode from '@/components/TreeNode.vue';
+import { ref, onMounted, computed } from 'vue'
 import { BeakerIcon, AcademicCapIcon, StarIcon } from '@heroicons/vue/24/solid'
 import { MenuIcon, XIcon, HomeIcon, MoonIcon, SunIcon, SettingsIcon, UsersIcon, BookOpenIcon, GithubIcon, BracketsIcon, CircleHelpIcon, ExternalLinkIcon} from 'lucide-vue-next'
 
@@ -13,6 +13,10 @@ const closeAbsoluteSidebar = () => (window.innerWidth < 1024) ? isSidebarOpen.va
 import { useSettingsStore } from '@/stores/savedStore'
 const settingsStore = useSettingsStore()
 settingsStore.loadSettings()
+
+import { useTreeStore } from '@/stores/treeStore'
+//useTreeStore().initialize()
+const rootTreeNodes = computed(() => Object.values(useTreeStore().nodes).filter(node => !node.parent))
 
 const searchTerm = ref('')
 // prevent multiple searches that makes the UI sluggish when typing fast in the search box, also prevent too many network requests
@@ -66,10 +70,11 @@ onMounted(() => {
     </div> 
 
     <div class="flex-1 flex flex-col lg:flex-row relative">
-      <div :class="isSidebarOpen ? 'w-64 min-w-64' : 'w-0'" 
+      <div :class="isSidebarOpen ? 'w-72 min-w-72' : 'w-0'" 
         class="transition-all duration-300 overflow-hidden absolute lg:static shadow-xl top-0 left-0 z-10 bg-[var(--bg-color)]">
-        <div class="flex flex-col text-nowrap">
-          <RouterLink to="/" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center">
+        <div class="flex flex-col text-nowrap ml-3">
+          <TreeNode v-for="(node, i) in rootTreeNodes" :key="i" :id="node.key" />
+          <!-- <RouterLink to="/" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center">
             <HomeIcon class="mr-2 text-green-700" size="20"/>මුල් පිටුව / Home</RouterLink>
           <RouterLink to="/about" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center">
             <CircleHelpIcon class="mr-2 text-blue-500" size="20"/><AcademicCapIcon class="mr-2 text-blue-500 w-5"/>උපදෙස් / Help</RouterLink>
@@ -79,7 +84,7 @@ onMounted(() => {
             <BookOpenIcon class="mr-2" size="20"/>පොත් අන්තර්ගතය</RouterLink>
           <a href="https://github.com/pnfo/arutha.lk" target="blank" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center">
             <GithubIcon class="mr-2" size="20"/>GitHub Repo<ExternalLinkIcon class="ml-2 text-blue-500" size="20"/></a>
-          <RouterLink to="/settings" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center"><SettingsIcon class="mr-2" size="20"/>සැකසුම් / Settings</RouterLink>
+          <RouterLink to="/settings" class="px-4 py-3 hover:bg-[var(--hover-color)] flex items-center"><SettingsIcon class="mr-2" size="20"/>සැකසුම් / Settings</RouterLink> -->
         </div>
       </div>
       
