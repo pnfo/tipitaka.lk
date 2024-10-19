@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, reactive } from 'vue'
+import { Script } from '@/pali-converter'
 
 // export factory function for creating dynamic stores
 export function useSavedStore(storeId, initialObject = {}) {
@@ -45,6 +46,8 @@ export const useSettingsStore = defineStore('settings-parent', () => {
     const savedStore = useSavedStore('settings', {
         darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
         fontSize: 0, // use as fontSize: 18 + state.fontSize + 'px'
+        splitType: 'tabs',
+        paliScript: Script.LATN,
         dicts: [0, 1],
     }), snackbar = reactive({model: false})
 

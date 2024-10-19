@@ -3,6 +3,7 @@ import path from 'path'
 import sqlite3 from 'sqlite3'; // Import the sqlite3 module and enable verbose logging
 sqlite3.verbose()
 import { bjtBooksInfo } from '../src/scanned-pages.mjs';
+import { typeToInt } from '../src/utils';
 
 const openDb = (file, isWrite = true) => {
     const mode = isWrite ? (sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE) : sqlite3.OPEN_READONLY;
@@ -30,7 +31,7 @@ async function batchInsert(tableName, columns, valuesList) {
 
 const populateBooks = () => batchInsert('book', booksColumns, Object.entries(bjtBooksInfo).map(([id, info]) => [id, ...Object.values(info)]))
 
-const typeToInt = {centered: 0, heading: 1, paragraph: 2, gatha: 3, unindented: 4, footnote: 5,}
+//const typeToInt = {centered: 0, heading: 1, paragraph: 2, gatha: 3, unindented: 4, footnote: 5,}
 const textColumns = {
     book_id: 'INTEGER NOT NULL',
     page: 'INTEGER NOT NULL',

@@ -1,7 +1,9 @@
 <script setup>
 import VAlert from '@/components/VAlert.vue';
 import {AtSignIcon, SendIcon} from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const examples = [
   ['alu.', 'අලු, අළු'],
   ['nuvana.', 'නුවණ, නුවන'],
@@ -17,8 +19,8 @@ const examples = [
   <div class="m-1">
       <VAlert :border="true" color="warning">
         <div>
-          මෙම ශබ්දකෝෂයේ පාරිභාෂික වචන 5600 පමණ තිබෙන නමුත් ඉන් බොහොමයක් වචන වලට අදාළ ඉංග්‍රීසි වචන ඇතුළත් වී නොමැත. මේ වචන ඇතුළු කිරීමට ඔබට උපකාර කළ හැකි නම්
-          <SendIcon class="inline" size="18"/> path.nirvana <AtSignIcon class="inline" size="18" /> gmail.com වෙත පණිවුඩයක් එවන්න.
+          To report errors, ask questions or provide suggestions {{ route.params.script }}
+          <SendIcon class="inline" size="18"/> path.nirvana <AtSignIcon class="inline" size="18" /> gmail.com.
         </div>
       </VAlert>
 

@@ -1,18 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import TextView from '@/views/TextView.vue'
+import { Script } from '@/pali-converter'
+
+const scriptsStr = Object.values(Script).join('|')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/:lang(sinh|romn)',
+      path: `/:script(${scriptsStr})`,
       name: 'home',
       component: HomeView,
     },
     {
-      path: '/:lang(sinh|romn)/:key/:offset?',
-      name: 'bookpage', 
+      path: `/:script(${scriptsStr})/:key/:offset?`,
+      name: 'text', 
       component: TextView,
     }
   ]

@@ -2,15 +2,14 @@
 // import { useSinhalaStore, dictionaryInfos } from '@/stores/sinhala'
 // import { useSettingsStore } from '@/stores/savedStore'
 import { useRoute, useRouter } from 'vue-router'
-import { queryDb } from '@/utils';
 import { watchEffect, computed, ref, reactive, watch, onMounted } from 'vue';
 import VAlert from '@/components/VAlert.vue';
-import VSkeleton from '@/components/VSkeleton.vue';
-import VButton from '@/components/VButton.vue';
+import TextRow from '@/components/TextRow.vue';
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useTextStore } from '@/stores/textStore'
+import footnoteAbbreviations from '@/stores/footnote-abbreviations.json';
+import { convert, Script } from '../pali-converter';
 
-const resultsPerPage = 50
 const route = useRoute(), router = useRouter(), textStore = useTextStore()
 
 const props = defineProps({
@@ -24,16 +23,52 @@ const pageStatus = computed(() => {
     return { text: 'දත්ත ලැබෙන තුරු මොහොතක් රැඳී සිටින්න.', type: 'warning' }
   } else if (tab.value.error) {
     return { text: tab.value.error, type: 'error' }
-  } else if (tab.value.text.length) {
-    return { text: `පොතේ xx පිටුවේ “${tab.value.text[0].page}” වචනයේ සිට “${tab.value.text.slice(-1)[0].page}” වචනය දක්වා වචන ${tab.value.text.length} ක තේරුම් පහතින් බලන්න.`, type: 'success' }
+  } else if (tab.value.rows.length) {
+    return { text: `පොතේ xx පිටුවේ “${tab.value.rows[0].page}” වචනයේ සිට “${tab.value.rows.slice(-1)[0].page}” වචනය දක්වා වචන ${tab.value.rows.length} ක තේරුම් පහතින් බලන්න.`, type: 'success' }
   } else {
     return { text: `පිටු අංකයේ වරදක් ඇත. 1 සිට අතර විය යුතුය.`, type: 'error'}
   }
 })
 
+const containerRef = ref(null);
+const handleContainerClick = (event) => {
+  if (event.target.classList.contains('fn-pointer')) {
+    document.querySelectorAll('span.inline-footnote,span.inline-abbreviation').forEach(e => e.remove());
+    const text = event.target.textContent, page = Number(event.target.getAttribute('page'))
+    const footnote = document.createElement('span');
+    footnote.classList.add('inline-footnote');
+    footnote.innerHTML = tab.value.footnotes[page][text].content;
+    event.target.appendChild(footnote);
+    adjustPosition(footnote)
+  } else if (event.target.classList.contains('abbr-pointer')) {
+    document.querySelectorAll('span.inline-abbreviation').forEach(e => e.remove());
+    const abbreviation = document.createElement('span')
+    abbreviation.classList.add('inline-abbreviation')
+    const sinhText = convert(event.target.textContent, Script.SINH, tab.value.paliScript) // TODO PTS does not work in Roman
+    abbreviation.innerHTML = convert(footnoteAbbreviations[sinhText][0], tab.value.paliScript, Script.SINH)
+    event.target.appendChild(abbreviation);
+    adjustPosition(abbreviation)
+  } else {
+    document.querySelectorAll('span.inline-footnote,span.inline-abbreviation').forEach(e => e.remove());
+  }
+}
+
+/** normally the footnote is shown on the right of the pointer, 
+ * however if the footnote is going off the right edge of the viewport, adjust it to the left */
+function adjustPosition(tooltip) {
+  const rect = tooltip.getBoundingClientRect(), containerRect = containerRef.value.getBoundingClientRect()
+  if (rect.right > containerRect.right) {
+    tooltip.style.left = 'auto' // unset the left style from footnote class
+    tooltip.style.right = '0px' 
+  }
+}
+
+
 const loadingTrigger = ref(null);
 
 onMounted(() => {
+  containerRef.value.addEventListener('click', handleContainerClick)
+
   const observer = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting && !tab.isLoading) {
       textStore.fetchTextSection(props.tabIndex)
@@ -48,18 +83,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="">
-
-    <div class="flex items-center gap-2 mb-3">
-        <label>ශබ්දකෝෂය </label>
-        <!-- <select v-model="selectedDict" class="block px-3 py-2 dark:bg-black border border-gray-300 rounded-md">
-            <option v-for="info in dictionaryInfos" :key="info.index" :value="info.index">
-                {{ info.title }}
-            </option>
-        </select> -->
-    </div>
-
-    <VAlert :border="true" :color="pageStatus.type">
+  <div class="">
+    <VAlert v-if="!!pageStatus.text" :border="true" :color="pageStatus.type">
       <div>{{ pageStatus.text }}</div>
     </VAlert>
 
@@ -70,33 +95,23 @@ onMounted(() => {
       <RouterLink :to="`/bookpage/${dictInfo.id}/${numberOfPages}`"><VButton :appendIcon="ChevronLast" class="nav-button"><span>අවසාන පිටුව</span></VButton></RouterLink> -->
     </div>
 
-    <div class="container">
-      <div class="sm:columns-1 xl:columns-2">
-          <div v-for="(entry, i) in tab.text" :entry="entry" :key="i" class="break-inside-avoid-column">{{ entry.text }}</div>
-      </div>
+    <div ref="containerRef" class="container">
+      <table>
+          <!-- <div v-for="(entry, i) in tab.rows" :entry="entry" :key="i" class="break-inside-avoid-column">{{ entry.text }}</div> -->
+        <tr v-for="(row, i) in tab.rows" :key="i">
+          <TextRow :row="row" />
+        </tr>
+      </table>
 
       <div ref="loadingTrigger" class="h-10 mt-4 flex items-center justify-center">
-        <p v-if="tab.isLoading" class="text-gray-500">Loading more items...</p>
-        <div v-if="tab.isLoading">
-          <VSkeleton></VSkeleton>
-        </div>
+        <p v-if="tab.section >= 0" class="text-gray-500 animate-pulse">Fetching More Text...</p>
+        <p v-else>End of the Book.</p>
       </div>
     </div>
-
-    <!-- <div class="container mx-auto p-4">
-      <h1 class="text-2xl font-bold mb-4">Infinite Scroll Example</h1>
-      <div class="space-y-4">
-        <div v-for="item in displayedItems" :key="item.id" class="bg-white shadow rounded-lg p-4">
-          <h2 class="text-lg font-semibold">{{ item.title }}</h2>
-          <p class="text-gray-600">{{ item.description }}</p>
-        </div>
-      </div>
-      
-    </div> -->
 
   </div>
 </template>
 
-<style scoped>
+<style>
 
 </style>

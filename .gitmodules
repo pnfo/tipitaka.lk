@@ -1,0 +1,3 @@
+[submodule "src/pali-converter"]
+	path = src/pali-converter
+	url = https://github.com/pnfo/pali-converter

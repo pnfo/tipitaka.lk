@@ -14,5 +14,13 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',   // App 1 entry point
+        align: 'dev/align/index.html'     // App 2 entry point
+      }
+    }
+  },
 })
