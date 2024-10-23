@@ -48,6 +48,7 @@ export const useSettingsStore = defineStore('settings-parent', () => {
         fontSize: 0, // use as fontSize: 18 + state.fontSize + 'px'
         splitType: 'tabs',
         paliScript: Script.LATN,
+        collections: [Script.LATN], // collections preference
         dicts: [0, 1],
     }), snackbar = reactive({model: false})
 

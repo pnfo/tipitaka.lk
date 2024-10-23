@@ -1,13 +1,11 @@
-import fs from 'fs'
-import path from 'path'
 import Database from 'better-sqlite3';
 import { bjtBooksInfo } from '../../tipitaka.lk/src/scanned-pages.mjs';
-import { rootNodes } from '../src/utils.js';
+import { rootNodes, typeToInt, queryDb } from '../src/utils.js'
 
 const db = new Database('../server-data/text.db', { fileMustExist: true });
 db.pragma('journal_mode = WAL');
 
-const headingByBook = db.prepare('SELECT * FROM text WHERE language = 0 AND type = 1 AND book_id = ?')
+const headingByBook = db.prepare('SELECT * FROM pali WHERE type = 1 AND book_id = ?')
 
 const getKey = (entry) => entry.key || (entry.parent + '-' + entry.suffix)
 const addParent = (child, parent) => {
@@ -35,7 +33,7 @@ Object.entries(bjtBooksInfo).forEach(([bookId, info]) => {
     let prevRow
     headings.forEach(row => {
         const lastParent = parents.slice(-1)[0]
-        const newEntry = {...row, leaf: 1} // by default a leaf
+        const newEntry = {...row, leaf: 1, translations: ''} // by default a leaf
         if (row.level == topLevel && topSuffixs.length) {
             addParent(newEntry, lastParent)
             newEntry.suffix = topSuffixs.pop()
@@ -52,6 +50,7 @@ Object.entries(bjtBooksInfo).forEach(([bookId, info]) => {
 
         newEntry.key = getKey(newEntry)
         if (headingAtEndKeys.some(k => newEntry.key.search(k) != -1) && newEntry.level == 1 && prevRow) {
+            newEntry.headingLocation = {page: newEntry.page, seq: newEntry.seq} // needed for finding translation availablity
             newEntry.page = prevRow.page // set newEntry's location to prevRow's location + 1
             newEntry.seq = prevRow.seq + 1 // doesn't matter even if at a page boundary
             newEntry.heading_end = 1
@@ -62,8 +61,20 @@ Object.entries(bjtBooksInfo).forEach(([bookId, info]) => {
     
         //console.log(`level: ${newEntry.level}, key: ${getKey(newEntry)}, text: ${newEntry.text}`)
     })
-})
+});
 
+['sin_bjt', 'eng_thani'].forEach((transTable, i) => {
+    const rows = db.prepare(`SELECT book_id, page, seq, text FROM ${transTable} WHERE type = '${typeToInt['heading']}' AND text != '';`).all()
+    const entries = Object.values(tree)
+    rows.forEach(row => {
+        const entry = entries.find(entry => {
+            const {page, seq} = entry.heading_end ? entry.headingLocation : entry
+            return entry.book_id === row.book_id && page === row.page && seq === row.seq
+        })
+        //console.assert(entry, `could not find tree entry for trans heading ${JSON.stringify(row)}`)
+        if (entry) entry.translations += (i ? ',' : '') + transTable
+    });
+})
 
 const cleanText = (text) => {
     text = text.trim()
@@ -79,9 +90,10 @@ const treeColumns = {
     parent: 'TEXT DEFAULT ""',
     leaf: 'INTEGER DEFAULT 1', // whether the node is a leaf
     book_id: 'INTEGER NOT NULL',
-    page: 'INTEGER DEFAULT 1',
-    seq: 'INTEGER DEFAULT 0',
+    page: 'INTEGER NOT NULL',
+    seq: 'INTEGER NOT NULL',
     heading_end: 'INTEGER DEFAULT 0',
+    translations: 'TEXT DEFAULT ""',
 }
 db.exec(`DROP TABLE IF EXISTS tree;
     CREATE TABLE IF NOT EXISTS tree (
@@ -89,5 +101,5 @@ db.exec(`DROP TABLE IF EXISTS tree;
     CHECK(book_id >= 1 AND book_id <= 57 AND level >= 1)
 );`)
 const insertTree = db.prepare(`INSERT INTO tree VALUES (${Object.keys(treeColumns).map(c => '@'+c).join(', ')})`)
-Object.values(tree).forEach(entry => insertTree.run({page: 1, seq: 0, heading_end: 0, ...entry, text: cleanText(entry.text)}))
+Object.values(tree).forEach(entry => insertTree.run({heading_end: 0, ...entry, text: cleanText(entry.text)}))
 db.close()

@@ -145,7 +145,7 @@ async function loadSqlite(section) {
     console.assert(treeNodes.length == 1, `expected one tree node for ${pali.key} but got ${treeNodes.length}`)
     const node = treeNodes[0]
 
-    const query = `SELECT * FROM text WHERE book_id = ${node.book_id} AND language = 0 AND 
+    const query = `SELECT * FROM sinh WHERE book_id = ${node.book_id} AND 
       (page = ${node.page} AND seq >= ${node.seq} OR page > ${node.page}) 
       ORDER BY page ASC, seq ASC LIMIT ${pali.rowsPerSection} OFFSET ${pali.rowsPerSection * pali.section}`
 

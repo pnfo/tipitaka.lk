@@ -22,8 +22,8 @@ const toggleBranch = () => {
 }
 const handleClick = () => {
     console.log(`clicked on text ${props.id}`)
-    useTextStore().addTab(props.id)
-    router.push(`/${settingsStore.settings.paliScript}/${props.id}`) // push instead of replace to add to history
+    const tabLink = useTextStore().addTab(props.id)
+    router.push(tabLink) // push instead of replace to add to history
 };
 const getNodeTitle = (title) => {
     if (settingsStore.settings.paliScript != Script.SI) {

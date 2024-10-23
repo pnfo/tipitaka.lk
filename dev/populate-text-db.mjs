@@ -1,47 +1,11 @@
 import fs from 'fs'
 import path from 'path'
-import sqlite3 from 'sqlite3'; // Import the sqlite3 module and enable verbose logging
-sqlite3.verbose()
-import { bjtBooksInfo } from '../src/scanned-pages.mjs';
-import { typeToInt } from '../src/utils';
+import Database from 'better-sqlite3';
+import { bjtBooksInfo } from '../../tipitaka.lk/src/scanned-pages.mjs';
+import { typeToInt } from '../src/utils.js';
 
-const openDb = (file, isWrite = true) => {
-    const mode = isWrite ? (sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE) : sqlite3.OPEN_READONLY;
-    return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(file, mode, err => err ? reject(err) : resolve(db));
-    })
-}
+const questionStr = (count) => Array(count).fill('?').join(', ')
 
-const runAsync = async (db, sql, params) => {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, (err, row) => err ? reject(err) : resolve(row));
-    });
-}
-async function batchInsert(tableName, columns, valuesList) {
-    await runAsync(db, 'BEGIN')
-    const columnNames = Object.keys(columns)
-    const stmt = await db.prepare(`INSERT INTO ${tableName} (${columnNames.join(', ')}) VALUES (${Array(columnNames.length).fill('?').join(', ')})`);
-    for (const values of valuesList) {
-         await stmt.run(values); 
-    }
-    await stmt.finalize();
-    await runAsync(db, 'COMMIT')
-    console.log(`wrote ${valuesList.length} rows to ${tableName} table`)
-}
-
-const populateBooks = () => batchInsert('book', booksColumns, Object.entries(bjtBooksInfo).map(([id, info]) => [id, ...Object.values(info)]))
-
-//const typeToInt = {centered: 0, heading: 1, paragraph: 2, gatha: 3, unindented: 4, footnote: 5,}
-const textColumns = {
-    book_id: 'INTEGER NOT NULL',
-    page: 'INTEGER NOT NULL',
-    seq: 'INTEGER NOT NULL',
-    language: 'INTEGER NOT NULL',
-    type: 'INTEGER NOT NULL', // typeToInt conversion
-    level: 'INTEGER DEFAULT NULL',
-    text: 'TEXT NOT NULL',
-    key_offset: 'INTEGER DEFAULT NULL', // adding sparsely populated columns have minimal affect on db size
-}
 const booksColumns = {
     id: 'INTEGER NOT NULL PRIMARY KEY',
     name: 'TEXT NOT NULL DEFAULT ""',
@@ -49,29 +13,58 @@ const booksColumns = {
     first_page: 'INTEGER NOT NULL DEFAULT 0',
     page_offset: 'INTEGER NOT NULL DEFAULT 0',
     image_prefix: 'TEXT NOT NULL DEFAULT ""',
+    //top_suffixes: 'TEXT NOT NULL DEFAULT ""',
+    //parent_key: 'TEXT NOT NULL DEFAULT ""',
 }
-const createTables = [
-'DROP TABLE IF EXISTS book;',
-`CREATE TABLE IF NOT EXISTS book (
-    ${Object.entries(booksColumns).map(([name, desc]) => name + ' ' + desc).join(',\n')},
-    CHECK(id >= 1 AND id <= 57)
-);`,
-'DROP TABLE IF EXISTS text;',
-`CREATE TABLE IF NOT EXISTS text (
-    ${Object.entries(textColumns).map(([name, desc]) => name + ' ' + desc).join(',\n')},
-    PRIMARY KEY(book_id, page, seq, language),
-    CHECK(page >= 1 AND seq >= 0 AND level >= 0 AND language >= 0 AND language <= 1)
-);`,]
-
-const db = await openDb('../db/text.db') 
-for (const statement of createTables) {
-    await runAsync(db, statement);
+const paliColumns = {
+    book_id: 'INTEGER NOT NULL',
+    page: 'INTEGER NOT NULL',
+    seq: 'INTEGER NOT NULL',
+    type: 'INTEGER NOT NULL', // typeToInt conversion
+    level: 'INTEGER DEFAULT NULL',
+    text: 'TEXT NOT NULL',
+    key_offset: 'INTEGER DEFAULT NULL', // adding sparsely populated columns have minimal affect on db size
 }
-await populateBooks()
-await populateText()
+const transColumns = {
+    book_id: 'INTEGER NOT NULL',
+    page: 'INTEGER NOT NULL',
+    seq: 'INTEGER NOT NULL',
+    type: 'INTEGER NOT NULL', // typeToInt conversion
+    level: 'INTEGER DEFAULT NULL',
+    text: 'TEXT NOT NULL',
+}
+const createBookTable = 
+    `DROP TABLE IF EXISTS book;
+    CREATE TABLE IF NOT EXISTS book (
+        ${Object.entries(booksColumns).map(([name, desc]) => name + ' ' + desc).join(',\n')},
+        CHECK(id >= 1 AND id <= 57)
+    );`
+const createGenericTable = (tableName, columns) => `
+    DROP TABLE IF EXISTS ${tableName};
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+        ${Object.entries(columns).map(([name, desc]) => name + ' ' + desc).join(',\n')},
+        PRIMARY KEY(book_id, page, seq),
+        CHECK(page >= 1 AND seq >= 0 AND level >= 0)
+    );
+`
 
-async function populateText() {
-    const dataInputFolder = '../public/static/text'
+const db = new Database('../server-data/text.db', { fileMustExist: false });
+db.pragma('journal_mode = WAL');
+
+// write bjt books info
+db.exec(createBookTable)
+const insertBook = db.prepare(`INSERT INTO book VALUES (${questionStr(Object.keys(booksColumns).length)})`)
+Object.entries(bjtBooksInfo).forEach(([id, info]) => insertBook.run(id, ...Object.values(info).slice(0, 5)))
+
+// write BJT pali and sin_bjt
+db.exec(createGenericTable('pali', paliColumns))
+const insertPali = db.prepare(`INSERT INTO pali VALUES (${questionStr(Object.keys(paliColumns).length)})`)
+db.exec(createGenericTable('sin_bjt', transColumns))
+const insertSinh = db.prepare(`INSERT INTO sin_bjt VALUES (${questionStr(Object.keys(transColumns).length)})`)
+populateBJTText()
+
+function populateBJTText() {
+    const dataInputFolder = '../../tipitaka.lk/public/static/text'
     const filesFilter = /^dn-|^mn-|^sn-|^an-|^kn-|^ap-|^vp-/
     const inputFiles = fs.readdirSync(dataInputFolder).filter(name => filesFilter.test(name)).sort()
     console.log(`num files selected ${inputFiles.length}`)
@@ -80,29 +73,46 @@ async function populateText() {
     for (const filename of inputFiles) {
         const obj = JSON.parse(fs.readFileSync(path.join(dataInputFolder, filename)))
         const paliOnly = /^ap-pat/.test(filename)//, isAtta = filename.startsWith('atta-')
-        const bookInfo = bjtBooksInfo[obj.bookId], valuesList = []
+        const bookInfo = bjtBooksInfo[obj.bookId], paliList = [], sinhList = []
         for (const page of obj.pages) {
             console.assert(paliOnly || page.pali.entries.length == page.sinh.entries.length, `pali and sinh entry counts are different ${filename}:${page.pageNum}`)
             const realPage = page.pageNum + obj.pageOffset + bookInfo.pageNumOffset
             let seq = page.pali.sequenceStart || 0 // mn-1-x has cases where the page is split between two json files - making book/page repeat
-            valuesList.push(...page.pali.entries.map(e => [obj.bookId, realPage, seq++, 0, typeToInt[e.type], e.level, e.text, e.keyOffset]))
-            valuesList.push(...page.pali.footnotes.map(fn => [obj.bookId, realPage, seq++, 0, typeToInt['footnote'], null, fn.text, null]))
+            paliList.push(...page.pali.entries.map(e => [obj.bookId, realPage, seq++, typeToInt[e.type], e.level, e.text, e.keyOffset]))
+            paliList.push(...page.pali.footnotes.map(fn => [obj.bookId, realPage, seq++, typeToInt['footnote'], null, fn.text, null]))
             
             if (paliOnly) continue
-            seq = page.sinh.sequenceStart || 0
-            valuesList.push(...page.sinh.entries.map(e => [obj.bookId, realPage, seq++, 1, typeToInt[e.type], e.level, e.text, e.keyOffset]))
-            valuesList.push(...page.sinh.footnotes.map(fn => [obj.bookId, realPage, seq++, 1, typeToInt['footnote'], null, fn.text, null]))
+            seq = page.sinh.sequenceStart || 0 // Note: there would be a gap in seq number of mn-1-2.json first page
+            sinhList.push(...page.sinh.entries.map(e => [obj.bookId, realPage, seq++, typeToInt[e.type], e.level, e.text]))
+            sinhList.push(...page.sinh.footnotes.map(fn => [obj.bookId, realPage, seq++, typeToInt['footnote'], null, fn.text]))
         }
         // write one file at a time so that the valuesList is not too big
-        //console.log(`bookid: ${obj.bookId}, file: ${filename}`)
-        await batchInsert('text', textColumns, valuesList)
-        // valuesList.forEach(values => {
-        //     const key = values.slice(0, 4).join('-')
-        //     if (dedup[key]) console.error(`dup found ${key} in ${filename} and ${dedup[key]}`)
-        //     dedup[key] = filename
-        // })
+        paliList.forEach(values => insertPali.run(...values))
+        sinhList.forEach(values => insertSinh.run(...values))
+        console.log(`file: ${filename} inserted pali: ${paliList.length} and sinh: ${sinhList.length} rows`)
     }
 }
 
-await runAsync(db, 'VACUUM;')
+db.exec(createGenericTable('eng_thani', transColumns))
+const insertTrans = db.prepare(`INSERT INTO eng_thani VALUES (${Object.keys(transColumns).map(c => '@'+c).join(', ')})`)
+populateAlignedText('eng_thani')
+
+function populateAlignedText(collName) {
+    const dataInputFolder = path.join('align', collName)
+    const inputFiles = fs.readdirSync(dataInputFolder).sort()
+    for (const filename of inputFiles) {
+        const obj = JSON.parse(fs.readFileSync(path.join(dataInputFolder, filename)))
+        console.assert(obj.pali.rows.length >= obj.eng.text.length, `file: ${filename}, not enough pali rows to cover the eng text`)
+        const rowList = obj.eng.text.map((text, i) => {
+            const row = obj.pali.rows[i]
+            row.text = text.trim()
+            delete row.key_offset
+            return row
+        })
+        rowList.forEach(row => insertTrans.run(row))
+        console.log(`file: ${filename} inserted ${collName}: ${rowList.length}`)
+    }
+}
+
+db.exec('VACUUM;')
 db.close()

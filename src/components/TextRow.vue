@@ -9,7 +9,7 @@ import { useTextStore } from '@/stores/textStore'
 const route = useRoute(), router = useRouter(), textStore = useTextStore()
 
 const props = defineProps({
-    row: Object,
+    zippedRow: Object,
 });
 
 onMounted(() => {
@@ -19,8 +19,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <td class="entry w-1/2 align-top relative text-justify py-1">
-    <div :class="props.row.type" :level="props.row.level" class="html" v-html="props.row.text">
+  <td v-for="(row, i) of props.zippedRow" class="entry flex-1 w-1/2 align-top relative text-justify py-1">
+    <div :class="row.type" :level="row.level" class="html" v-html="row.text">
     </div>
   </td>
 </template>

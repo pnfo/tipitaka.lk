@@ -6,7 +6,7 @@ import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, XIcon } from 'luc
 import { useTreeStore } from '@/stores/treeStore'
 import { useTextStore } from '@/stores/textStore'
 import { useSettingsStore } from '@/stores/savedStore'
-import { Script, convert } from '@/pali-converter';
+import { Script, convert, isScript } from '@/pali-converter';
 
 const route = useRoute(), router = useRouter(), treeStore = useTreeStore(), textStore = useTextStore(), settingsStore = useSettingsStore()
 
@@ -14,11 +14,21 @@ const node = computed(() => treeStore.nodes[route.params.key])
 const isActive = (i) => {
   return settingsStore.settings.splitType != 'tabs' || i == textStore.activeTab
 }
+const getTabHandleText = (tab) => {
+  // if tab has some pali column use that script otherwise use the setting.paliscript
+  const scriptColls = tab.collections.filter(coll => isScript(coll))
+  const scriptToUse = scriptColls.length ? scriptColls[0] : settingsStore.paliScript
+  return convert(tab.node.text, scriptToUse, Script.SI)
+}
 
 onMounted(async () => {
     if (!textStore.tabs.length) {
         await treeStore.openUpto(route.params.key) // make sure that the tree is loaded before
-        textStore.addTab(route.params.key, route.params.script)
+        if (route.params.collection) {
+          textStore.addTab(route.params.key, [route.params.collection, 'eng_thani'])
+        } else {
+          // shouldn't get here due to router 
+        }
     }
 });
 
@@ -32,8 +42,8 @@ onMounted(async () => {
         <button v-for="(tab, i) in textStore.tabs" :key="i" class="cursor-pointer flex items-center justify-center  relative px-4 py-2"
           :class="{'tab-handle': !isActive(i), 'tab-handle-active z-10': isActive(i), 'flex-1': settingsStore.settings.splitType == 'columns'}" 
           @click="textStore.makeActive(i)">
-          <span>{{ convert(tab.node.text, tab.paliScript, Script.SI) }}</span>
-          <XIcon @click.stop="textStore.removeTab(i)" class="ml-2 w-5"></XIcon>
+          <span>{{ getTabHandleText(tab) }}</span>
+          <XIcon @click.stop="textStore.removeTab(i)" class="ml-2 w-5 text-gray-500 hover:text-red-500"></XIcon>
         </button>
       </div>
       <span class="absolute left-0 right-0 bottom-0 h-1 bg-blue-500 dark:bg-blue-400"></span>

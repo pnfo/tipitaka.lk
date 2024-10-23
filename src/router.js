@@ -2,22 +2,28 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import TextView from '@/views/TextView.vue'
 import { Script } from '@/pali-converter'
+import { translationInfo } from './utils'
 
-const scriptsStr = Object.values(Script).join('|')
+const collectionStr = [...Object.values(Script), ...Object.keys(translationInfo)].join('|')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: `/:script(${scriptsStr})`,
+      path: `/:collection(${collectionStr})`,
       name: 'home',
       component: HomeView,
     },
+    // {
+    //   path: `/:script(${scriptsStr})/:key/:offset?`,
+    //   name: 'pali', 
+    //   component: TextView,
+    // },
     {
-      path: `/:script(${scriptsStr})/:key/:offset?`,
+      path: `/:collection(${collectionStr})/:key/:offset?`,
       name: 'text', 
       component: TextView,
-    }
+    },
   ]
 })
 
