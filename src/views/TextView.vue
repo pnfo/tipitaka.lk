@@ -7,6 +7,8 @@ import { useTreeStore } from '@/stores/treeStore'
 import { useTextStore } from '@/stores/textStore'
 import { useSettingsStore } from '@/stores/savedStore'
 import { Script, convert, isScript } from '@/pali-converter';
+import DropdownButton from '@/components/DropdownButton.vue';
+import { TranslationInfo } from '@/utils';
 
 const route = useRoute(), router = useRouter(), treeStore = useTreeStore(), textStore = useTextStore(), settingsStore = useSettingsStore()
 
@@ -15,9 +17,8 @@ const isActive = (i) => {
   return settingsStore.settings.splitType != 'tabs' || i == textStore.activeTab
 }
 const getTabHandleText = (tab) => {
-  // if tab has some pali column use that script otherwise use the setting.paliscript
-  const scriptColls = tab.collections.filter(coll => isScript(coll))
-  const scriptToUse = scriptColls.length ? scriptColls[0] : settingsStore.paliScript
+  const coll0 = tab.collections[0] // use the script of the first collection
+  const scriptToUse = isScript(coll0) ? coll0 : TranslationInfo[coll0].script
   return convert(tab.node.text, scriptToUse, Script.SI)
 }
 
@@ -25,7 +26,7 @@ onMounted(async () => {
     if (!textStore.tabs.length) {
         await treeStore.openUpto(route.params.key) // make sure that the tree is loaded before
         if (route.params.collection) {
-          textStore.addTab(route.params.key, [route.params.collection, 'eng_thani'])
+          textStore.addTab(route.params.key, [route.params.collection])
         } else {
           // shouldn't get here due to router 
         }
@@ -38,19 +39,38 @@ onMounted(async () => {
   <div style="">
     <!-- Tab Handles -->
     <div v-if="textStore.tabs.length > 1 && settingsStore.settings.splitType != 'single'" class="relative">
-      <div class="tabs flex space-x-4">
-        <button v-for="(tab, i) in textStore.tabs" :key="i" class="cursor-pointer flex items-center justify-center  relative px-4 py-2"
-          :class="{'tab-handle': !isActive(i), 'tab-handle-active z-10': isActive(i), 'flex-1': settingsStore.settings.splitType == 'columns'}" 
-          @click="textStore.makeActive(i)">
-          <span>{{ getTabHandleText(tab) }}</span>
-          <XIcon @click.stop="textStore.removeTab(i)" class="ml-2 w-5 text-gray-500 hover:text-red-500"></XIcon>
-        </button>
-      </div>
-      <span class="absolute left-0 right-0 bottom-0 h-1 bg-blue-500 dark:bg-blue-400"></span>
+
+      <template v-if="settingsStore.windowXY.X > 640">
+        <div class="tabs flex space-x-4">
+          <button v-for="(tab, i) in textStore.tabs" :key="i" class="cursor-pointer flex items-center justify-center  relative px-4 py-2"
+            :class="{'tab-handle': !isActive(i), 'tab-handle-active z-10': isActive(i), 'flex-1': settingsStore.settings.splitType == 'columns'}" 
+            @click="textStore.makeActive(i)">
+            <span>{{ getTabHandleText(tab) }}</span>
+            <XIcon @click.stop="textStore.removeTab(i)" class="ml-2 w-5 text-gray-500 hover:text-red-500"></XIcon>
+          </button>
+        </div>
+        <span class="absolute left-0 right-0 bottom-0 h-1 bg-blue-500 dark:bg-blue-400"></span>
+      </template>
+
+      <DropdownButton v-else class="absolute top-2 left-1 z-10" bgColor="gray"
+        :items="textStore.tabs.map((t, i) => i).filter(i => i != textStore.activeTab)"
+        :disableDropdown="false" positioningClasses="left-0"
+        @item-click="(i) => textStore.makeActive(i)">
+
+        <template #button>
+          {{ getTabHandleText(textStore.tabs[textStore.activeTab]) }}
+          <XIcon @click="textStore.removeTab(textStore.activeTab)" class="ml-2 hover:text-red-500 cursor-pointer w-5" />
+        </template>
+
+        <template #item="{ item }">
+          {{ getTabHandleText(textStore.tabs[item]) }}
+        </template>
+      </DropdownButton>
+      
     </div>
 
     <!-- Tab Content Panels -->
-    <div v-if="settingsStore.settings.splitType != 'columns'" class="p-2 rounded-b-lg h-[calc(100vh-120px)] overflow-y-auto">
+    <div v-if="settingsStore.settings.splitType != 'columns' || settingsStore.windowXY.X <= 640" class="p-2 rounded-b-lg h-[calc(100vh-120px)] overflow-y-auto">
       <TextTab v-if="textStore.activeTab >= 0" :tabIndex="textStore.activeTab"></TextTab>
     </div>
     <div v-else class="flex space-x-4 rounded-b-lg">

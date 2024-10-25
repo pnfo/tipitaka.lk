@@ -45,18 +45,25 @@ const updateDarkMode = (dark) => {
 export const useSettingsStore = defineStore('settings-parent', () => {
     const savedStore = useSavedStore('settings', {
         darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-        fontSize: 0, // use as fontSize: 18 + state.fontSize + 'px'
+        fontScale: 1.1,
         splitType: 'tabs',
         paliScript: Script.LATN,
-        collections: [Script.LATN], // collections preference
+        translation: 'sin_bjt', // last selected from the right nav
         dicts: [0, 1],
-    }), snackbar = reactive({model: false})
+    })
+    const snackbar = reactive({model: false}),
+        windowXY = reactive({ X: window.innerWidth, Y: window.innerHeight })
 
+    function updateWindowXY() {
+        windowXY.X = window.innerWidth
+        windowXY.Y = window.innerHeight
+    }
     const fontSizeStyle = computed(() => ({fontSize: 18 + savedStore.state.fontSize + 'px'}))
     function loadSettings() {
         savedStore.loadState()
         // On page load or when changing themes, best to add inline in `head` to avoid FOUC
         updateDarkMode(savedStore.state.darkMode)
+        document.documentElement.style.setProperty('--font-scale', savedStore.state.fontScale);
     }
     function toggleDarkMode() {
         savedStore.setState('darkMode', !savedStore.state.darkMode)
@@ -65,6 +72,11 @@ export const useSettingsStore = defineStore('settings-parent', () => {
 
     function setSetting(name, value) {
         savedStore.setState(name, value)
+    }
+    function updateFontScale(by) {
+        const newScale = savedStore.state.fontScale * by
+        document.documentElement.style.setProperty('--font-scale', newScale);
+        setSetting('fontScale', newScale)
     }
 
     function setSnackbar({ timeout, message, type, param }) {
@@ -78,5 +90,5 @@ export const useSettingsStore = defineStore('settings-parent', () => {
 
     return {
         loadSettings, setSetting, settings: savedStore.state, fontSizeStyle, 
-        setSnackbar, snackbar, toggleDarkMode }
+        setSnackbar, snackbar, toggleDarkMode, windowXY, updateWindowXY, updateFontScale }
 })

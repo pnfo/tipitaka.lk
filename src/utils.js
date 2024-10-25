@@ -1,15 +1,17 @@
+import { Script, isScript } from "@/pali-converter"
 
+const rootNodeCommon = { leaf: 0, seq: 0, translations: ['sin_bjt'], }
 export const rootNodes = { // page can be found in firstPageId in bookinfo, default seq of 0 is good enough
-    'vp': { key: 'vp', text: 'විනයපිටක', level: 7, book_id: 1, parent: '', leaf: 0, page: 25, seq: 0, translations: 'sinh', }, 
-    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', leaf: 0, page: 15, seq: 0, translations: 'sinh', 
+    'vp': { key: 'vp', text: 'විනයපිටක', level: 7, book_id: 1, parent: '', page: 25,  ...rootNodeCommon }, 
+    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', page: 15, 
         open: true, children: ['dn', 'mn', 'sn', 'an', 'kn'] },
-    'ap': { key: 'ap', text: 'අභිධම්මපිටක', level: 7, book_id: 45, parent: '', leaf: 0, page: 37, seq: 0, translations: 'sinh', },
+    'ap': { key: 'ap', text: 'අභිධම්මපිටක', level: 7, book_id: 45, parent: '', page: 37, ...rootNodeCommon },
 
-    'dn': { key: 'dn', text: 'දීඝනිකාය', level: 6, book_id: 10, parent: 'sp', leaf: 0, page: 15, seq: 0, translations: 'sinh', },
-    'mn': { key: 'mn', text: 'මජ්ඣිමනිකාය', level: 6, book_id: 13, parent: 'sp', leaf: 0, page: 19, seq: 0, translations: 'sinh', },
-    'sn': { key: 'sn', text: 'සංයුත්තනිකාය', level: 6, book_id: 16, parent: 'sp', leaf: 0, page: 25, seq: 0, translations: 'sinh', },
-    'an': { key: 'an', text: 'අඞ්ගුත්තරනිකාය', level: 6, book_id: 22, parent: 'sp', leaf: 0, page: 37, seq: 0, translations: 'sinh', },
-    'kn': { key: 'kn', text: 'ඛුද්දකනිකාය', level: 6, book_id: 28, parent: 'sp', leaf: 0, page: 27, seq: 0, translations: 'sinh', },
+    'dn': { key: 'dn', text: 'දීඝනිකාය', level: 6, book_id: 10, parent: 'sp', page: 15, ...rootNodeCommon },
+    'mn': { key: 'mn', text: 'මජ්ඣිමනිකාය', level: 6, book_id: 13, parent: 'sp', page: 19, ...rootNodeCommon },
+    'sn': { key: 'sn', text: 'සංයුත්තනිකාය', level: 6, book_id: 16, parent: 'sp', page: 25, ...rootNodeCommon },
+    'an': { key: 'an', text: 'අඞ්ගුත්තරනිකාය', level: 6, book_id: 22, parent: 'sp', page: 37, ...rootNodeCommon },
+    'kn': { key: 'kn', text: 'ඛුද්දකනිකාය', level: 6, book_id: 28, parent: 'sp', page: 27, ...rootNodeCommon },
 }
 
 // codes from https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes
@@ -18,10 +20,16 @@ export const Language = {
     ENG: 'eng',
     THA: 'tha',
 }
-export const translationInfo = {
-    sin_bjt: { language: Language.SIN, name: '', description: '', },
-    eng_thani: { language: Language.ENG, nanme: '', description: '', },
+export const LanguageInfo = {
+    [Language.SIN]: { name: 'සිංහල', flag: 'sri-lanka.svg', },
+    [Language.ENG]: { name: 'English', flag: 'uk.svg', },
+    [Language.THA]: { name: 'ไทย', flag: 'thailand.svg', },
 }
+export const TranslationInfo = {
+    sin_bjt:   { name: 'බුද්ධ ජයන්ති', language: Language.SIN, script: Script.SINH, flag: 'sri-lanka.svg', description: '', },
+    eng_thani: { name: 'Thanissaro', language: Language.ENG, script: Script.LATN, flag: 'uk.svg', description: '', },
+}
+export const getScriptForCollection = (coll) => isScript(coll) ? coll : TranslationInfo[coll].script
 
 export const typeToInt = {centered: 0, heading: 1, paragraph: 2, gatha: 3, unindented: 4, footnote: 5,}
 export const intToType = Object.keys(typeToInt)

@@ -5,6 +5,8 @@
 /* color palette from <https://github.com/vuejs/theme> */
 
 :root {
+  --font-scale: 1.1; /* Default scale, equivalent to 100% */
+
   --bg-color: #f0f0f0; /* Light mode background */
   --text-color: #222;   /* Light mode text */
   --hover-color: #cbd5e1;
@@ -23,4 +25,23 @@ body {
   line-height: 1.6;
 
   font-size: 18px;
+}
+
+.script-thai { font-family: 'font-thai'; }
+.script-sinh { font-family: 'font-sinh'; }
+@font-face {
+  font-family: 'font-thai'; font-weight: 400; 
+  src: url('/fonts/BuddhawajanaPali-Regular.otf') format('opentype'); font-display: swap; 
+}
+@font-face {
+  font-family: 'font-thai'; font-weight: 700; 
+  src: url('/fonts/BuddhawajanaPali-Bold.otf') format('opentype'); font-display: swap; 
+}
+@font-face {
+  font-family: 'font-sinh'; font-weight: 400; 
+  src: url('/fonts/NotoSansSinhala-Regular.woff2') format('woff2'); font-display: swap; 
+}
+@font-face {
+  font-family: 'font-sinh'; font-weight: 700; 
+  src: url('/fonts/NotoSansSinhala-Bold.woff2') format('woff2'); font-display: swap; 
 }

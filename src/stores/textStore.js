@@ -16,8 +16,10 @@ export const useTextStore = defineStore('textStore', () => {
 
     function addTab(key, collections = null) {
         const node = treeStore.nodes[key], settingsStore = useSettingsStore()
-        const newTab = {node, data: [], section: 0, collections: collections || settingsStore.settings.collections, }
-            //paliScript: isScript(collections[0]) ? collections[0] : settingsStore.settings.paliScript}
+        const defaultCollections = node.translations.includes(settingsStore.settings.translation) ? 
+            [settingsStore.settings.paliScript, settingsStore.settings.translation] : [settingsStore.settings.paliScript]
+        const newTab = {node, data: [], section: 0, collections: collections || defaultCollections, xsVisibleCollection: 0}
+
         if (settingsStore.settings.splitType == 'single' && tabs.length) {
             tabs[tabs.length - 1] = newTab // replace the last tab
         } else {
@@ -52,12 +54,13 @@ export const useTextStore = defineStore('textStore', () => {
         activeTab.value = tabIndex
         router.replace(getTabLink(tabIndex))
     }
-    function removeCollection(tabIndex, collIndex) {
-        if (tabs[tabIndex].collections.length < 2) return
+    function removeCollection(tabIndex, collName) {
+        const collIndex = tabs[tabIndex].collections.indexOf(collName)
+        if (tabs[tabIndex].collections.length < 2 || collIndex < 0) return
+        if (collIndex == tabs[tabIndex].xsVisibleCollection) tabs[tabIndex].xsVisibleCollection = 0 // make the first coll visible
         tabs[tabIndex].collections.splice(collIndex, 1)
         tabs[tabIndex].data.splice(collIndex, 1)
     }
-    
     
 
     async function fetchTextSection(tabIndex) {
@@ -130,18 +133,36 @@ export const useTextStore = defineStore('textStore', () => {
         data.rows = [...data.rows, ...rows]
     }
 
-    // TODO needs tobe rewritten
     async function changeScript(newScript) {
         if (activeTab.value < 0) return
         const tab = tabs[activeTab.value]
-        if (tab.collections.every(coll => !isScript(coll) || coll == newScript)) return // not script or same as newscript
-        tab.collections = tab.collections.map(coll => isScript(coll) ? newScript : coll)
-        tab.section = 0 // clear out the data
-        tab.data = []
-        router.replace(getTabLink(activeTab.value))
-        await fetchTextSection(activeTab.value)
+        if (tab.collections.every(coll => coll == newScript)) return // same as newscript
+        if (tab.collections.every(coll =>!isScript(coll))) { // not script
+            tab.collections.push(newScript) // add as a new collection
+        } else {
+            tab.collections = tab.collections.map(coll => isScript(coll) ? newScript : coll)
+        }
+        await reloadData(tab, tab.collections.indexOf(newScript))
         // instead of converting again which could cause conversion errors, we refetch the text from server 
         //tab.rows.forEach(row => row.text = convert(row.text, newScript, tab.paliScript))
+    }
+    async function addCollection(coll) {
+        if (activeTab.value < 0) return
+        const tab = tabs[activeTab.value]
+        if (!isScript(coll) && !tab.node.translations.includes(coll)) return // this trans is not available
+        if (tab.collections.includes(coll)) {
+            tab.xsVisibleCollection = tab.collections.indexOf(coll) // make it visible to user before 
+            return
+        }
+        tab.collections.push(coll)
+        await reloadData(tab, tab.collections.length - 1)
+    }
+    async function reloadData(tab, changedCollIndex) {
+        tab.section = 0 // clear out the data
+        tab.data = []
+        tab.xsVisibleCollection = changedCollIndex // make the new coll visible on small screens
+        router.replace(getTabLink(activeTab.value))
+        await fetchTextSection(activeTab.value)
     }
 
     return {
@@ -154,5 +175,6 @@ export const useTextStore = defineStore('textStore', () => {
         changeScript,
         getActiveLink,
         removeCollection,
+        addCollection,
     };
 });

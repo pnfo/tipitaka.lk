@@ -1,23 +1,23 @@
 <script setup>
-// import { useSinhalaStore, dictionaryInfos } from '@/stores/sinhala'
-// import { useSettingsStore } from '@/stores/savedStore'
 import { useRoute, useRouter } from 'vue-router'
-import { watchEffect, computed, ref, reactive, watch, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import VAlert from '@/components/VAlert.vue';
 import TextRow from '@/components/TextRow.vue';
-import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, XIcon } from 'lucide-vue-next';
+import { XIcon } from 'lucide-vue-next';
 import { useTextStore } from '@/stores/textStore'
+import { useSettingsStore } from '@/stores/savedStore'
 import footnoteAbbreviations from '@/stores/footnote-abbreviations.json';
-import { convert, Script } from '../pali-converter';
-import { XCircleIcon } from '@heroicons/vue/20/solid';
+import { convert, Script } from '@/pali-converter';
+import CollectionName from '@/components/CollectionName.vue';
+import DropdownButton from '@/components/DropdownButton.vue';
+import { getScriptForCollection } from '@/utils';
 
-const route = useRoute(), router = useRouter(), textStore = useTextStore()
+const route = useRoute(), router = useRouter(), textStore = useTextStore(), settingsStore = useSettingsStore()
 
 const props = defineProps({
     tabIndex: Number,
 });
 const tab = computed(() => textStore.tabs[props.tabIndex])
-const node = computed(() => textStore.tabs[props.tabIndex]?.node)
 const zippedRows = computed(() => {
   const data = tab.value.data, maxLength = Math.max(...data.map(({rows}) => rows.length)), 
     zippedRows = Array.from({ length: maxLength }, () => []);
@@ -27,6 +27,12 @@ const zippedRows = computed(() => {
   }
   return zippedRows
 })
+function removeCollection(collName) {
+  if (settingsStore.settings.translation == collName) {
+    settingsStore.setSetting('translation', '')
+  }
+  textStore.removeCollection(props.tabIndex, collName)
+}
 
 const collectionStatuses = computed(() => {
   return tab.value.data.map(data => {
@@ -93,36 +99,47 @@ onMounted(() => {
   }
 })
 
+const isSmHidden = (i) => tab.value.xsVisibleCollection != i ? 'hidden sm:block' : ''
+const collectionScripts = computed(() => tab.value.collections.map(coll => getScriptForCollection(coll)))
 </script>
 
 <template>
-  <div class="">
+  <div v-if="tab" class="relative">
 
-    <div class="flex gap-1">
-      <!-- <RouterLink :to="`/bookpage/${dictInfo.id}/${1}`"><VButton :prependIcon="ChevronFirst" class="nav-button"><span>මුල් පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${pageNum - 1}`"><VButton :prependIcon="ChevronLeft" class="nav-button"><span>කළින් පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${pageNum + 1}`"><VButton :appendIcon="ChevronRight" class="nav-button"><span>ඊළඟ පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${numberOfPages}`"><VButton :appendIcon="ChevronLast" class="nav-button"><span>අවසාන පිටුව</span></VButton></RouterLink> -->
-    </div>
-
-    <div ref="containerRef" class="container">
+    <div ref="containerRef">
       <table>
-          <!-- <div v-for="(entry, i) in tab.rows" :entry="entry" :key="i" class="break-inside-avoid-column">{{ entry.text }}</div> -->
-        <thead>
+        <thead class="sticky top-0">
           <tr class="flex gap-5">
-            <th v-for="(collName, i) in tab.collections" :key="i" class="relative flex-1">
-              {{ collName }}
-              <VAlert v-if="!!collectionStatuses[i].text" :border="true" :color="collectionStatuses[i].type">
-                <div>{{ collectionStatuses[i].text }}</div>
-              </VAlert>
-              <button @click="textStore.removeCollection(props.tabIndex, i)" 
-                class="absolute top-1 right-1 text-gray-500 hover:text-red-500 z-10 cursor-pointer w-5"><XIcon /></button>
-            </th>
+            <td v-for="(collName, i) in tab.collections" :key="i" class="relative flex-1" :class="isSmHidden(i)">
+                <DropdownButton class="absolute top-1 right-1" bgColor="green"
+                  :items="tab.collections.filter(c => c != collName)"
+                  :disableDropdown="settingsStore.windowXY.X > 640"
+                  @item-click="(coll) => tab.xsVisibleCollection = tab.collections.indexOf(coll)">
+
+                  <template #button>
+                    <CollectionName :collName="collName"/>
+                    <XIcon v-if="tab.collections.length > 1" @click="removeCollection(collName)" class="ml-2 hover:text-red-500 cursor-pointer w-5" />
+                  </template>
+
+                  <template #item="{ item }">
+                    <CollectionName :collName="item"/>
+                  </template>
+                </DropdownButton>
+            </td>
           </tr>
         </thead>
         <tbody>
+          <tr class="flex gap-5">
+            <td v-for="(collName, i) in tab.collections" :key="i" class="flex-1" :class="isSmHidden(i)">
+              <VAlert v-if="!!collectionStatuses[i].text" :border="true" :color="collectionStatuses[i].type">
+                <div>{{ collectionStatuses[i].text }}</div>
+              </VAlert>
+            </td>
+          </tr>
           <tr v-for="(zippedRow, i) in zippedRows" :key="i" class="flex gap-5">
-            <TextRow :zippedRow="zippedRow" />
+            <td v-for="(row, j) of zippedRow" class="entry flex-1 w-1/2 align-top text-justify py-1" :class="isSmHidden(j)">
+              <TextRow :row="row" :key="j" :script="collectionScripts[j]"/>
+            </td>
           </tr>
         </tbody>
       </table>
