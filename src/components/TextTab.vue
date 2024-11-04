@@ -131,7 +131,7 @@ const collectionScripts = computed(() => tab.value.collections.map(coll => getSc
         <tbody>
           <tr class="flex gap-5">
             <td v-for="(collName, i) in tab.collections" :key="i" class="flex-1" :class="isSmHidden(i)">
-              <VAlert v-if="!!collectionStatuses[i].text" :border="true" :color="collectionStatuses[i].type">
+              <VAlert v-if="collectionStatuses[i].type != 'success'" :border="true" :color="collectionStatuses[i].type">
                 <div>{{ collectionStatuses[i].text }}</div>
               </VAlert>
             </td>
@@ -145,8 +145,8 @@ const collectionScripts = computed(() => tab.value.collections.map(coll => getSc
       </table>
 
       <div ref="loadingTrigger" class="h-10 mt-4 flex items-center justify-center">
-        <p v-if="tab.section >= 0" class="text-gray-500 animate-pulse">Fetching More Text...</p>
-        <p v-else>End of the Book.</p>
+        <p v-if="tab.data.some(d => !d.hasEnded)" class="text-gray-500 animate-pulse">Fetching More Text...</p>
+        <p v-else>End of the Text.</p>
       </div>
     </div>
 

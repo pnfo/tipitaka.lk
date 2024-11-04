@@ -14,11 +14,11 @@ export const useTextStore = defineStore('textStore', () => {
     const treeStore = useTreeStore()
     const router = useRouter()
 
-    function addTab(key, collections = null) {
+    function addTab(key, options = {}) {
         const node = treeStore.nodes[key], settingsStore = useSettingsStore()
-        const defaultCollections = node.translations.includes(settingsStore.settings.translation) ? 
+        const collections = node.translations.includes(settingsStore.settings.translation) ? // default to use if not provided in the options
             [settingsStore.settings.paliScript, settingsStore.settings.translation] : [settingsStore.settings.paliScript]
-        const newTab = {node, data: [], section: 0, collections: collections || defaultCollections, xsVisibleCollection: 0}
+        const newTab = {node, data: [], section: 0, collections, xsVisibleCollection: 0, ...options}
 
         if (settingsStore.settings.splitType == 'single' && tabs.length) {
             tabs[tabs.length - 1] = newTab // replace the last tab
@@ -60,6 +60,7 @@ export const useTextStore = defineStore('textStore', () => {
         if (collIndex == tabs[tabIndex].xsVisibleCollection) tabs[tabIndex].xsVisibleCollection = 0 // make the first coll visible
         tabs[tabIndex].collections.splice(collIndex, 1)
         tabs[tabIndex].data.splice(collIndex, 1)
+        if (collIndex == 0) router.replace(getActiveLink())
     }
     
 
@@ -67,27 +68,40 @@ export const useTextStore = defineStore('textStore', () => {
         const tab = tabs[tabIndex]
         if (!tab.node || tab.section < 0) return
         
-        const {book_id, page, seq = 0} = tab.node, nextSection = tab.section + 1
+        const {book_id, page, seq = 0, end_page, end_seq} = tab.node, nextSection = tab.section + 1
         tab.collections.forEach(async (coll, i) => {
             if (!tab.data[i]) tab.data[i] = { rows: [], footnotes: {}, isLoading: false, error: '', hasEnded: false, }
-            if (tab.data[i].isLoading) return
+            if (tab.data[i].isLoading || tab.data[i].hasEnded) return
             try {
                 const tableName = isScript(coll) ? 'pali' : coll
-                const firstSectionSelect = tab.section ? '' : `page = ${page} AND seq >= ${seq} OR `,
-                    sectionStartPage = page + tab.section * pagesPerSection + 1
-    
-                const query = `SELECT * FROM ${tableName} WHERE book_id = ${book_id} AND 
-                    (${firstSectionSelect} page BETWEEN ${sectionStartPage} and ${sectionStartPage + pagesPerSection - 1}) ORDER BY page ASC, seq ASC`
+
+                const pageSeqFilter = []
+                if (tab.isFullSutta) {
+                    if (end_page - page > 1) pageSeqFilter.push(`page BETWEEN ${page + 1} and ${end_page - 1}`)
+                    if (end_page == page) {
+                        pageSeqFilter.push(`page = ${page} AND seq >= ${seq} AND seq <= ${end_seq}`)
+                    } else {
+                        pageSeqFilter.push(`page = ${page} AND seq >= ${seq}`)
+                        pageSeqFilter.push(`page = ${end_page} AND seq <= ${end_seq}`)
+                    }
+                } else {
+                    if (tab.section == 0) pageSeqFilter.push(`page = ${page} AND seq >= ${seq}`)
+                    const sectionStartPage = page + tab.section * pagesPerSection + 1
+                    pageSeqFilter.push(`page BETWEEN ${sectionStartPage} and ${sectionStartPage + pagesPerSection - 1}`)
+                }
+                
+                const query = `SELECT * FROM ${tableName} WHERE book_id = ${book_id} AND (${pageSeqFilter.join(' OR ')}) ORDER BY page ASC, seq ASC;`
                 console.log(query)
         
                 tab.data[i].isLoading = true
                 const rows = await queryDb(query)
-                if (!rows.length) {
-                    tab.data[i].hasEnded = true
-                    //tab.section = -1 // can not fetch further - book finished
-                } else {
+                if (rows.length) {
                     appendRows(tab.data[i], rows, coll)
                     tab.section = nextSection // only if at least one collection still has more data
+                }
+                if (!rows.length || tab.isFullSutta) {
+                    tab.data[i].hasEnded = true
+                    //tab.section = -1 // can not fetch further - book finished
                 }
                 tab.data[i].error = ''
             } catch(e) {

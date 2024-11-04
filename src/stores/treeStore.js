@@ -8,14 +8,29 @@ export const useTreeStore = defineStore('treeStore', () => {
         row.translations = row.translations.split(',')
         nodes[row.key] = row
     }
+    const addRowsToNodes = (rows) => {
+        rows.forEach(row => { // first add the rows to nodes
+            row.translations = row.translations.split(',')
+            nodes[row.key] = row 
+        })
+        rows.forEach(row => { // then update children in nodes - the order of the returned rows important
+            if (!row.parent) return // root nodes
+            if (nodes[row.parent].children) {
+                nodes[row.parent].children.push(row.key);
+            } else {
+                nodes[row.parent].children = [row.key];
+            }
+        })
+    }
 
     // get and update node children if not already fetched before
     async function getChildren(key) {
         if (!nodes[key]?.children) {
             try {
                 const rows = await queryDb(`SELECT * from tree WHERE parent = '${key}'`)
-                rows.forEach(row => addRowToNodes(row))
-                nodes[key].children = rows.map(row => row.key)
+                addRowsToNodes(rows)
+                // rows.forEach(row => addRowToNodes(row))
+                // nodes[key].children = rows.map(row => row.key)
             } catch (error) {
                 console.error(`Error fetching children for key ${key}`, error);
             }
@@ -37,14 +52,7 @@ export const useTreeStore = defineStore('treeStore', () => {
         if (!nodes[key]) {
             try {
                 const rows = await queryDb(`SELECT * from tree WHERE parent IN (${parents.map(p => "'" + p + "'")})`)
-                rows.forEach(row => addRowToNodes(row)) // first add the rows to nodes
-                rows.forEach(row => { // then update children in nodes - the order of the returned rows important
-                    if (nodes[row.parent].children) {
-                        nodes[row.parent].children.push(row.key);
-                    } else {
-                        nodes[row.parent].children = [row.key];
-                    }
-                }) 
+                addRowsToNodes(rows)
             } catch (error) {
                 console.error(`Error opening up to ${key}`, error);
             }

@@ -1,17 +1,17 @@
-import { Script, isScript } from "@/pali-converter"
+import { Script, isScript } from "./pali-converter/index.js" //dev scripts complain without index.js here
 
-const rootNodeCommon = { leaf: 0, seq: 0, translations: ['sin_bjt'], }
+const rootNodeCommon = { leaf: 0, seq: 0, translations: 'sin_bjt', }
 export const rootNodes = { // page can be found in firstPageId in bookinfo, default seq of 0 is good enough
-    'vp': { key: 'vp', text: 'විනයපිටක', level: 7, book_id: 1, parent: '', page: 25,  ...rootNodeCommon }, 
-    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', page: 15, 
+    'vp': { key: 'vp', text: 'විනයපිටක', level: 7, book_id: 1, parent: '', page: 25, nextKey: 'vp-prj', ...rootNodeCommon }, 
+    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', page: 15, nextKey: 'dn', ...rootNodeCommon,
         open: true, children: ['dn', 'mn', 'sn', 'an', 'kn'] },
-    'ap': { key: 'ap', text: 'අභිධම්මපිටක', level: 7, book_id: 45, parent: '', page: 37, ...rootNodeCommon },
+    'ap': { key: 'ap', text: 'අභිධම්මපිටක', level: 7, book_id: 45, parent: '', page: 37, nextKey: 'ap-dhs', ...rootNodeCommon },
 
-    'dn': { key: 'dn', text: 'දීඝනිකාය', level: 6, book_id: 10, parent: 'sp', page: 15, ...rootNodeCommon },
-    'mn': { key: 'mn', text: 'මජ්ඣිමනිකාය', level: 6, book_id: 13, parent: 'sp', page: 19, ...rootNodeCommon },
-    'sn': { key: 'sn', text: 'සංයුත්තනිකාය', level: 6, book_id: 16, parent: 'sp', page: 25, ...rootNodeCommon },
-    'an': { key: 'an', text: 'අඞ්ගුත්තරනිකාය', level: 6, book_id: 22, parent: 'sp', page: 37, ...rootNodeCommon },
-    'kn': { key: 'kn', text: 'ඛුද්දකනිකාය', level: 6, book_id: 28, parent: 'sp', page: 27, ...rootNodeCommon },
+    'dn': { key: 'dn', text: 'දීඝනිකාය', level: 6, book_id: 10, parent: 'sp', page: 15, nextKey: 'dn-1', ...rootNodeCommon },
+    'mn': { key: 'mn', text: 'මජ්ඣිමනිකාය', level: 6, book_id: 13, parent: 'sp', page: 19, nextKey: 'mn-1', ...rootNodeCommon },
+    'sn': { key: 'sn', text: 'සංයුත්තනිකාය', level: 6, book_id: 16, parent: 'sp', page: 25, nextKey: 'sn-1', ...rootNodeCommon },
+    'an': { key: 'an', text: 'අඞ්ගුත්තරනිකාය', level: 6, book_id: 22, parent: 'sp', page: 37, nextKey: 'an-1', ...rootNodeCommon },
+    'kn': { key: 'kn', text: 'ඛුද්දකනිකාය', level: 6, book_id: 28, parent: 'sp', page: 27, nextKey: 'kn-khp', ...rootNodeCommon },
 }
 
 // codes from https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes

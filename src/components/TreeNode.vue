@@ -34,7 +34,7 @@ const getNodeTitle = (title) => {
 </script>
 
 <template>
-    <div class="text-base">
+    <div class="">
       <div @click="handleClick" class="cursor-pointer flex items-center">
         <span v-if="isBranch" @click.stop="toggleBranch">
             <FolderOpenIcon v-if="node.open" class="w-5 text-yellow-600"/>
@@ -49,7 +49,7 @@ const getNodeTitle = (title) => {
       <div v-if="isBranch && node.children && node.open" class="ml-6 my-1">
         <TreeNode 
           v-for="(childKey, i) in node.children" 
-          :key="i"
+          :key="childKey"
           :id="childKey"/>
       </div>
     </div>

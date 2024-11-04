@@ -23,14 +23,17 @@ const getTabHandleText = (tab) => {
 }
 
 onMounted(async () => {
-    if (!textStore.tabs.length) {
+    // if (!textStore.tabs.length) {
         await treeStore.openUpto(route.params.key) // make sure that the tree is loaded before
+        const isFullSutta = route.params.offset == 'full'
         if (route.params.collection) {
-          textStore.addTab(route.params.key, [route.params.collection])
+          textStore.addTab(route.params.key, {collections: [route.params.collection], isFullSutta})
         } else {
           // shouldn't get here due to router 
         }
-    }
+    // } else {
+    //     console.log('come here')
+    // }
 });
 
 </script>
@@ -79,12 +82,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="flex space-x-4">
-      <!-- <RouterLink :to="`/bookpage/${dictInfo.id}/${1}`"><VButton :prependIcon="ChevronFirst" class="nav-button"><span>මුල් පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${pageNum - 1}`"><VButton :prependIcon="ChevronLeft" class="nav-button"><span>කළින් පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${pageNum + 1}`"><VButton :appendIcon="ChevronRight" class="nav-button"><span>ඊළඟ පිටුව</span></VButton></RouterLink>
-      <RouterLink :to="`/bookpage/${dictInfo.id}/${numberOfPages}`"><VButton :appendIcon="ChevronLast" class="nav-button"><span>අවසාන පිටුව</span></VButton></RouterLink> -->
-    </div>
   </div>
 </template>
 

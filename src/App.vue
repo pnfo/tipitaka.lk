@@ -41,16 +41,15 @@ function checkSearch(focused) {
 import { useTextStore } from './stores/textStore';
 function changeScript(newScript) {
     settingsStore.setSetting('paliScript', newScript)
-    useTextStore().changeScript(newScript)
+    useTextStore().changeScript(newScript) // maybe do this only on textview route?
+    if (route.name == 'book') router.replace(`/${newScript}/${route.params.book}`)
+    else if (route.name == 'home') router.replace(`/${newScript}/`)
 }
 const availableTranslations = computed(() => route.params.key && treeStore.nodes[route.params.key] ? treeStore.nodes[route.params.key].translations : [])
 function addTranslation(trans) {
   if (!availableTranslations.value.includes(trans)) return
   settingsStore.setSetting('translation', trans)
   useTextStore().addCollection(trans)
-}
-function decreaseFontSize() {
-  document.documentElement.style.setProperty('--font-scale', 0.75);
 }
 
 const splitTypes = [
@@ -73,7 +72,7 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
     <!-- Top App Bar -->
     <div class="px-4 py-1 flex justify-between items-center bg-yellow-600 dark:bg-yellow-900"> 
       <button @click.stop="toggleLeftNav" >
-        <MenuIcon></MenuIcon>  
+        <MenuIcon />
       </button>
 
       <div class="relative w-full max-w-[400px] mx-3">
@@ -104,39 +103,25 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
       <!-- Left Tree View -->
       <div :class="isLeftNavOpen ? 'w-72 min-w-72' : 'w-0'" 
         class="absolute lg:static shadow-xl top-0 left-0 z-10 bg-[var(--bg-color)] h-[calc(100vh-50px)] overflow-y-auto transition-all duration-300">
-        <div class="flex flex-col text-nowrap ml-3 my-2">
+        <div class="flex flex-col text-nowrap ml-3 my-2 text-base" :class="`script-${settingsStore.settings.paliScript}`">
           <TreeNode v-for="(node, i) in rootTreeNodes" :key="i" :id="node.key" />
         </div>
       </div>
       
       <!-- Main contents -->
-      <div class="p-1">
+      <div class="p-1 w-full">
         <RouterView /> 
       </div>
 
       <!-- Right Tree View -->
       <div v-if="isRightNavOpen"
-        class="absolute w-64 min-w-64 2xl:static shadow-xl top-0 right-0 z-10 bg-[var(--bg-color)]">
+        class="absolute w-64 min-w-64 2xl:static shadow-xl top-0 right-0 z-10 bg-[var(--bg-color)] h-full">
         <div class="flex flex-col text-nowrap">
           <button @click="settingsStore.toggleDarkMode" class="right-nav-item">
             {{ settingsStore.settings.darkMode ? 'Light' : 'Dark' }} Mode
             <SunIcon v-if="settingsStore.settings.darkMode" class="ml-2"></SunIcon>
             <MoonIcon v-else class="ml-2"></MoonIcon>
           </button>
-
-          <!-- <button class="right-nav-item relative" @click.stop="isScriptSelectOpen = !isScriptSelectOpen">
-            <ChevronDownIcon class="mx-2 text-green-500" /><img :src="'/flags/' + scriptInfo[3].f" class="h-6 mx-2 dark:brightness-120">
-            {{ scriptInfo[1] }}
-            <LanguagesIcon class="ml-2 text-blue-500" size="20"/>
-            <div v-if="isScriptSelectOpen" class="absolute top-10 left-0 flex flex-col bg-[var(--bg-color)] z-20
-              shadow-xl rounded-md border-solid border-2 border-sky-400 dark:border-sky-700">
-              <button v-for="([script, info], i) of PaliScriptInfo" :key="i" @click="changeScript(script)" 
-                class="p-2 hover:bg-[var(--hover-color)] flex items-center">
-                <img :src="'/flags/' + info[3].f" class="h-6 mx-2 dark:brightness-120">
-                {{ info[1] }}
-              </button>
-            </div>
-          </button> -->
 
           <DropdownButton class="right-nav-item" bgColor="none" buttonClasses="" positioningClasses="right-10"
             :items="Object.values(Script)" :disableDropdown="false"
@@ -185,31 +170,12 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
               <CollectionName :collName="item" />
             </template>
           </DropdownButton>
-
-          <!-- <button v-if="availableTranslations.length" class="right-nav-item relative" @click.stop="isTransSelectOpen = !isTransSelectOpen" :disabled="availableTranslations.length == 0">
-            <ChevronDownIcon class="mx-2 text-green-500" />
-            {{ availableTranslations.length }}
-            <template v-if="translationInfo">
-              <img :src="'/flags/' + translationInfo.flag" class="h-6 mx-2 dark:brightness-120">
-              {{ translationInfo.name }}
-            </template>
-            <span v-else class="mx-2">Translation</span>
-            <GlobeIcon class="ml-2 text-blue-500" size="20"/>
-            <div v-if="isTransSelectOpen" class="absolute top-10 left-0 flex flex-col bg-[var(--bg-color)] z-20
-              shadow-xl rounded-md border-solid border-2 border-sky-400 dark:border-sky-700">
-              <button v-for="(info, trans) in TranslationInfo" :key="trans" @click="addTranslation(trans)" 
-                  class="p-2 hover:bg-[var(--hover-color)] flex items-center" :class="{'opacity-25': !availableTranslations.includes(trans)}">
-                  <img :src="'/flags/' + info.flag" class="h-6 mx-2 dark:brightness-120">
-                  {{ info.name }}
-              </button>
-            </div>
-          </button> -->
           
           <RouterLink :to="'/' + route.params.collection || ''" class="right-nav-item">Home<HomeIcon class="ml-2 text-green-700" size="20"/></RouterLink>
           <RouterLink :to="useTextStore().getActiveLink()" class="right-nav-item">Text<BookOpenIcon class="ml-2" size="20"/></RouterLink>
-          <RouterLink to="/about" class="right-nav-item">
+          <RouterLink to="/" class="right-nav-item">
             Help<CircleHelpIcon class="ml-2 text-blue-500" size="20"/></RouterLink>
-          <RouterLink to="/abbreviations/sankshiptha" class="right-nav-item">
+          <RouterLink to="/" class="right-nav-item">
             Bookmarks<StarIcon class="ml-2 w-5 text-yellow-500"/></RouterLink>
           
           <a href="https://github.com/pnfo/tipitaka.lk" target="blank" class="right-nav-item">

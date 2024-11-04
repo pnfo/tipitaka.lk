@@ -6,6 +6,7 @@
 
 :root {
   --font-scale: 1.1; /* Default scale, equivalent to 100% */
+  --script-scale: 1; /* script specific scale for each script */
 
   --bg-color: #f0f0f0; /* Light mode background */
   --text-color: #222;   /* Light mode text */
@@ -28,7 +29,9 @@ body {
 }
 
 .script-thai { font-family: 'font-thai'; }
-.script-sinh { font-family: 'font-sinh'; }
+.script-sinh { font-family: 'font-sinh'; --script-scale: 0.95; }
+.script-lana { font-family: 'font-lana'; }
+.script-taml { font-family: 'font-taml'; }
 @font-face {
   font-family: 'font-thai'; font-weight: 400; 
   src: url('/fonts/BuddhawajanaPali-Regular.otf') format('opentype'); font-display: swap; 
@@ -44,4 +47,12 @@ body {
 @font-face {
   font-family: 'font-sinh'; font-weight: 700; 
   src: url('/fonts/NotoSansSinhala-Bold.woff2') format('woff2'); font-display: swap; 
+}
+@font-face {
+  font-family: 'font-lana'; font-weight: 400; 
+  src: url('/fonts/Pali_Tilok.woff2') format('woff2'); font-display: swap; 
+}
+@font-face {
+  font-family: 'font-taml'; font-weight: 400; 
+  src: url('/fonts/agastya_sans.otf') format('opentype'); font-display: swap;  /* font didn't work after converting to woff2 so keep as otf */
 }

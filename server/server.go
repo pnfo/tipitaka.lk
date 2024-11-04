@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -40,6 +42,41 @@ func getPathToFile(file string) string {
 	return filepath.Join(exePath, rootPath, file)
 }
 
+func queryDb(payload QueryPayload) (*[]map[string]interface{}, error) {
+	// Get or create database connection
+	mutex.Lock()
+	db, exists := dbConnections[payload.DBName]
+	if !exists {
+		var err error
+		db, err = sqlx.Open("sqlite3", getPathToFile("server-data/"+payload.DBName)+"?mode=ro") // make sure to open read-only
+		if err != nil {
+			mutex.Unlock()
+			return nil, err
+		}
+		dbConnections[payload.DBName] = db
+	}
+	mutex.Unlock()
+
+	// Execute the SQL query
+	rows, err := db.Queryx(payload.Query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Scan results into a slice of maps
+	var results []map[string]interface{}
+	for rows.Next() {
+		result := make(map[string]interface{})
+		err = rows.MapScan(result)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return &results, nil
+}
+
 func main() {
 	printBox()
 
@@ -66,52 +103,22 @@ func main() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		// Get or create database connection
-		mutex.Lock()
-		db, exists := dbConnections[payload.DBName]
-		if !exists {
-			var err error
-			db, err = sqlx.Open("sqlite3", getPathToFile("server-data/"+payload.DBName)+"?mode=ro") // make sure to open read-only
-			if err != nil {
-				mutex.Unlock()
-				return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-			}
-			dbConnections[payload.DBName] = db
-		}
-		mutex.Unlock()
-
-		// Execute the SQL query
-		rows, err := db.Queryx(payload.Query)
+		results, err := queryDb(payload)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
-		defer rows.Close()
-
-		// Scan results into a slice of maps
-		var results []map[string]interface{}
-		for rows.Next() {
-			result := make(map[string]interface{})
-			err = rows.MapScan(result)
-			if err != nil {
-				return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-			}
-			results = append(results, result)
 		}
 
 		// Return the results as JSON
 		return c.JSON(results)
 	})
 
-	scanPagesPath, found := getBJTParams(userBJTPath)
-	BJTResponse := ""
-	if found {
-		BJTResponse = "/bjt-scanned-pages|jpg"
-		color.Green("Scanned BJT pages found at %s. Will be served from there.", scanPagesPath)
-		app.Static("/bjt-scanned-pages", scanPagesPath)
+	// Load metadata
+	metadata, allKeys, err := loadMiddlewareData()
+	if err != nil {
+		log.Fatal(err)
 	}
-	app.Get("/tipitaka-query/bjt-params", func(c *fiber.Ctx) error {
-		return c.SendString(BJTResponse)
-	})
+	app.Use(metadataMiddleware(metadata, allKeys)) // Apply middleware to handle metadata (title/desc) injection
+
 	app.Get("/tipitaka-query/version", func(c *fiber.Ctx) error {
 		return c.SendString(APPNAME)
 	})
@@ -133,22 +140,6 @@ func main() {
 
 	// Run the server
 	log.Fatal(app.Listen(PORT))
-}
-
-func getBJTParams(userBJTPath string) (string, bool) { // only supports bjt_newbooks/jpg
-	path := "/Pictures/bjt_newbooks/"
-	if userBJTPath != "" {
-		path = userBJTPath
-	}
-	filename := "10/DN1_Page_001.jpg"
-	locations := []string{"", "C:", "D:", "E:"} // empty for linux/mac
-	for _, loc := range locations {
-		fullPath := filepath.Join(loc, path, filename)
-		if _, err := os.Stat(fullPath); err == nil {
-			return loc + path, true // File found
-		}
-	}
-	return "", false // File not found in any of the paths
 }
 
 func printBox() {
@@ -185,4 +176,107 @@ func printBox() {
 
 	// Print bottom border
 	boxColor.Println("┗" + strings.Repeat("━", width) + "┛")
+}
+
+type PageMetadata struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+func loadMiddlewareData() (*map[string]PageMetadata, *[]string, error) {
+	data, err := os.ReadFile(getPathToFile("server-data/metadata.json"))
+	if err != nil {
+		return nil, nil, err
+	}
+	var metadata map[string]PageMetadata
+	if err = json.Unmarshal(data, &metadata); err != nil {
+		return nil, nil, err
+	}
+
+	results, err := queryDb(QueryPayload{DBName: "text.db", Query: "SELECT key FROM tree;"})
+	if err != nil {
+		return nil, nil, err
+	}
+	var allKeys []string
+	for _, result := range *results {
+		if str, ok := result["key"].(string); ok {
+			allKeys = append(allKeys, str)
+		}
+	}
+	return &metadata, &allKeys, nil
+}
+
+var scripts = []string{
+	"sinh", "deva", "latn", "thai", "mymr", "khmr", "laoo", "beng", "tibt", "cyrl", "guru", "gujr", "telu", "knda", "mlym", "taml",
+	"asse", "lana", "brah", "cakm", "java", "bali",
+}
+
+func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		parts := strings.Split(c.Path(), "/")
+		if len(parts) < 3 {
+			return c.Next()
+		}
+		if !slices.Contains(scripts, parts[1]) { // should be like /sinh/....
+			return c.Next()
+		}
+		pageMetadata, exists := (*metadata)["/"+parts[2]]
+		if !exists {
+			if !slices.Contains(*allKeys, parts[2]) { // check the exisistance of a key and if not return
+				return c.Next()
+			}
+			pageMetadata = (*metadata)["/key-placeholder"]
+		}
+
+		paramCount := strings.Count(pageMetadata.Title, "%s")
+		if paramCount > 0 {
+			var param string
+			if len(parts) > 3 && (parts[2] == "book" || parts[2] == "search") {
+				param = parts[3]
+			} else {
+				param = getSuttaNames(parts[2], parts[1])
+			}
+
+			// Replace the %s placeholders with the corresponding URL parameters
+			pageMetadata.Title = fmt.Sprintf(pageMetadata.Title, param)
+			pageMetadata.Description = fmt.Sprintf(pageMetadata.Description, param)
+		}
+
+		// Replace placeholders in your index.html template
+		html, err := os.ReadFile(getPathToFile("dist/index.html"))
+		if err != nil {
+			return err
+		}
+
+		htmlStr := string(html)
+		htmlStr = strings.ReplaceAll(htmlStr, "{{title}}", pageMetadata.Title)
+		htmlStr = strings.ReplaceAll(htmlStr, "{{description}}", pageMetadata.Description)
+
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
+		return c.SendString(htmlStr)
+	}
+}
+
+func getSuttaNames(key string, script string) string {
+	parts := strings.Split(key, "-")
+	var parentKeys []string
+	// Generate parent keys by removing one part at a time from the end
+	for i := len(parts); i > 0; i-- {
+		parentKey := strings.Join(parts[:i], "-")
+		parentKeys = append(parentKeys, "'"+parentKey+"'")
+	}
+	inClause := strings.Join(parentKeys, ", ")
+	query := fmt.Sprintf("SELECT %s FROM tree WHERE key IN (%s) ORDER BY length(key) DESC;", script, inClause)
+
+	results, err := queryDb(QueryPayload{DBName: "script-tree.db", Query: query})
+	if err != nil {
+		return key
+	}
+	var suttaNames []string
+	for _, result := range *results {
+		if str, ok := result[script].(string); ok {
+			suttaNames = append(suttaNames, str)
+		}
+	}
+	return strings.Join(suttaNames, " < ")
 }

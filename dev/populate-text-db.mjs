@@ -13,8 +13,8 @@ const booksColumns = {
     first_page: 'INTEGER NOT NULL DEFAULT 0',
     page_offset: 'INTEGER NOT NULL DEFAULT 0',
     image_prefix: 'TEXT NOT NULL DEFAULT ""',
-    //top_suffixes: 'TEXT NOT NULL DEFAULT ""',
-    //parent_key: 'TEXT NOT NULL DEFAULT ""',
+    parent_key: 'TEXT NOT NULL DEFAULT ""',
+    top_suffixes: 'TEXT NOT NULL DEFAULT ""',
 }
 const paliColumns = {
     book_id: 'INTEGER NOT NULL',
@@ -54,14 +54,14 @@ db.pragma('journal_mode = WAL');
 // write bjt books info
 db.exec(createBookTable)
 const insertBook = db.prepare(`INSERT INTO book VALUES (${questionStr(Object.keys(booksColumns).length)})`)
-Object.entries(bjtBooksInfo).forEach(([id, info]) => insertBook.run(id, ...Object.values(info).slice(0, 5)))
+Object.entries(bjtBooksInfo).forEach(([id, info]) => insertBook.run(id, ...Object.values(info).slice(0, 7)))
 
 // write BJT pali and sin_bjt
-db.exec(createGenericTable('pali', paliColumns))
-const insertPali = db.prepare(`INSERT INTO pali VALUES (${questionStr(Object.keys(paliColumns).length)})`)
-db.exec(createGenericTable('sin_bjt', transColumns))
-const insertSinh = db.prepare(`INSERT INTO sin_bjt VALUES (${questionStr(Object.keys(transColumns).length)})`)
-populateBJTText()
+// db.exec(createGenericTable('pali', paliColumns))
+// const insertPali = db.prepare(`INSERT INTO pali VALUES (${questionStr(Object.keys(paliColumns).length)})`)
+// db.exec(createGenericTable('sin_bjt', transColumns))
+// const insertSinh = db.prepare(`INSERT INTO sin_bjt VALUES (${questionStr(Object.keys(transColumns).length)})`)
+// populateBJTText()
 
 function populateBJTText() {
     const dataInputFolder = '../../tipitaka.lk/public/static/text'
