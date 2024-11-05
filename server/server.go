@@ -210,15 +210,33 @@ var scripts = []string{
 	"sinh", "deva", "latn", "thai", "mymr", "khmr", "laoo", "beng", "tibt", "cyrl", "guru", "gujr", "telu", "knda", "mlym", "taml",
 	"asse", "lana", "brah", "cakm", "java", "bali",
 }
+var transToScript = map[string]string{
+	"sin_bjt":   "sinh",
+	"eng_thani": "latn",
+}
 
 func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		parts := strings.Split(c.Path(), "/")
-		if len(parts) < 3 {
+		if len(parts) < 2 {
 			return c.Next()
 		}
-		if !slices.Contains(scripts, parts[1]) { // should be like /sinh/....
-			return c.Next()
+
+		// first part of the path is the collection (script or translation)
+		var script string
+		if _, exists := transToScript[parts[1]]; !exists { // should be like /sinh/.... or /sin_bjt/....
+			if !slices.Contains(scripts, parts[1]) {
+				return c.Next()
+			} else {
+				script = parts[1]
+			}
+		} else {
+			script = transToScript[parts[1]]
+		}
+
+		// second part of the path - get meta info from metadata.json
+		if len(parts) == 2 {
+			parts = append(parts, "") // handle the case without the trailing slash /sinh as opposed to /sinh/
 		}
 		pageMetadata, exists := (*metadata)["/"+parts[2]]
 		if !exists {
@@ -228,13 +246,14 @@ func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fi
 			pageMetadata = (*metadata)["/key-placeholder"]
 		}
 
+		// fillin any params (%s) if any
 		paramCount := strings.Count(pageMetadata.Title, "%s")
 		if paramCount > 0 {
 			var param string
 			if len(parts) > 3 && (parts[2] == "book" || parts[2] == "search") {
 				param = parts[3]
 			} else {
-				param = getSuttaNames(parts[2], parts[1])
+				param = getSuttaNames(parts[2], script)
 			}
 
 			// Replace the %s placeholders with the corresponding URL parameters
@@ -242,12 +261,11 @@ func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fi
 			pageMetadata.Description = fmt.Sprintf(pageMetadata.Description, param)
 		}
 
-		// Replace placeholders in your index.html template
+		// Replace placeholders {{title}}.. in your index.html template
 		html, err := os.ReadFile(getPathToFile("dist/index.html"))
 		if err != nil {
 			return err
 		}
-
 		htmlStr := string(html)
 		htmlStr = strings.ReplaceAll(htmlStr, "{{title}}", pageMetadata.Title)
 		htmlStr = strings.ReplaceAll(htmlStr, "{{description}}", pageMetadata.Description)

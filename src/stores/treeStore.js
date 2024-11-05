@@ -10,7 +10,7 @@ export const useTreeStore = defineStore('treeStore', () => {
     }
     const addRowsToNodes = (rows) => {
         rows.forEach(row => { // first add the rows to nodes
-            row.translations = row.translations.split(',')
+            row.translations = row.translations.split(',').filter(t => !!t.trim())
             nodes[row.key] = row 
         })
         rows.forEach(row => { // then update children in nodes - the order of the returned rows important

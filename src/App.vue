@@ -32,7 +32,7 @@ function doSearch() {
     const term = searchTerm.value.trim().toLowerCase().replace(/[^a-z\u0D80-\u0DFF \.%\-\u200d]/g, '')
     if (!term.length) return
     clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => router.push('/search/' + term), 500)
+    timeoutId = setTimeout(() => router.push('/help/' + term), 500) // send here to /search/ instead
 }
 function checkSearch(focused) {
     if (focused && searchTerm.value.length && route && !route.path.includes('search')) doSearch()
@@ -171,11 +171,11 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
             </template>
           </DropdownButton>
           
-          <RouterLink :to="'/' + route.params.collection || ''" class="right-nav-item">Home<HomeIcon class="ml-2 text-green-700" size="20"/></RouterLink>
+          <RouterLink :to="'/' + (route.params.collection || settingsStore.settings.paliScript)" class="right-nav-item">Home<HomeIcon class="ml-2 text-green-700" size="20"/></RouterLink>
           <RouterLink :to="useTextStore().getActiveLink()" class="right-nav-item">Text<BookOpenIcon class="ml-2" size="20"/></RouterLink>
-          <RouterLink to="/" class="right-nav-item">
+          <RouterLink to="/help/" class="right-nav-item">
             Help<CircleHelpIcon class="ml-2 text-blue-500" size="20"/></RouterLink>
-          <RouterLink to="/" class="right-nav-item">
+          <RouterLink to="/help/" class="right-nav-item">
             Bookmarks<StarIcon class="ml-2 w-5 text-yellow-500"/></RouterLink>
           
           <a href="https://github.com/pnfo/tipitaka.lk" target="blank" class="right-nav-item">

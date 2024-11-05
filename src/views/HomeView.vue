@@ -1,6 +1,6 @@
 <script setup>
 import VAlert from '@/components/VAlert.vue';
-import {AtSignIcon, SendIcon, MenuIcon, SettingsIcon, BookTextIcon} from 'lucide-vue-next'
+import {AtSignIcon, SendIcon, MenuIcon, SettingsIcon, BookTextIcon, WifiOffIcon} from 'lucide-vue-next'
 import { computed, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router'
 import { queryDb, TranslationInfo } from '../utils';
@@ -50,10 +50,7 @@ onMounted(async () => {
           To mark the 2,500th year since the Buddha’s enlightenment, a team of renowned Sri Lankan scholar-monks initiated a major project in 1956. This project sought to gather manuscripts from all corners of Sri Lanka, along with previously printed works, to compile an authoritative printed edition of the Tipitaka, known as the Buddha Jayanthi Tripitaka (BJT).
         </p>
         <p>
-          We are pleased to present this Tipitaka according to the Sri Lankan tradition, which we have meticulously digitized and proofread to ensure accuracy. Here, you can access the Pali canon and explore its teachings in multiple Indic scripts. The printed Buddha Jayanthi Tipitaka collection contains 57 volumes, covering the comprehensive teachings of the Buddha.
-        </p>
-        <p>
-          Our goal is to offer a trusted, accessible resource for anyone interested in exploring the timeless wisdom of the Tipitaka.
+          We are pleased to present this Tipitaka according to the Sri Lankan tradition, which we have meticulously digitized and proofread to ensure accuracy. Here, you can access the Pali canon and explore its teachings in multiple Indic scripts. The printed Buddha Jayanthi Tipitaka collection contains 57 volumes, which can be accessed digitally below.
         </p>
       </div>
       <div v-else-if="collection == 'sin_bjt'" class="m-3">
@@ -83,13 +80,13 @@ onMounted(async () => {
         </div>
       </VAlert>
 
-      <!-- <VAlert color="info">අන්තර්ජාලය නැතිව Offline භාවිතා කළ හැකි මෘදුකාංග පහතින් බාගත කරගන්න.</VAlert>
+      <VAlert color="info">Download offline software which can be used without Internet <WifiOffIcon class="inline" size="18"/> below.</VAlert>
       <div class="flex flex-wrap gap-3 download-software-list">
-          <a href="https://play.google.com/store/apps/details?id=lk.tipitaka.main" target="_blank"><img src="/images/android2.png"></a>
-          <a href="https://github.com/pnfo/arutha.lk/releases/" target="_blank"><img src="/images/windows.png"></a>
-          <a href="https://github.com/pnfo/arutha.lk/releases/" target="_blank"><img src="/images/macos2.png"></a>
-          <a href="https://github.com/pnfo/arutha.lk/releases/" target="_blank"><img src="/images/linux.png"></a>
-      </div> -->
+          <!-- <a href="https://play.google.com/store/apps/details?id=lk.tipitaka.main" target="_blank"><img src="/images/android2.png"></a> -->
+          <a href="https://github.com/pnfo/tipitaka.lk/releases/" target="_blank"><img src="/images/windows.png"></a>
+          <a href="https://github.com/pnfo/tipitaka.lk/releases/" target="_blank"><img src="/images/macos2.png"></a>
+          <a href="https://github.com/pnfo/tipitaka.lk/releases/" target="_blank"><img src="/images/linux.png"></a>
+      </div>
   </div>
 </template>
 

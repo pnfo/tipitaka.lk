@@ -5,6 +5,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx,vue}",
     "./dev/align/*.{js,ts,jsx,tsx,vue}",
+    '!./**/node_modules', // src/pali-converter has node_modules - get a warning without this.
   ],
   theme: {
     extend: {

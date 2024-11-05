@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import TextView from '@/views/TextView.vue'
 import BookView from '@/views/BookView.vue'
+import HelpView from '@/views/HelpView.vue'
 import { Script } from '@/pali-converter'
 import { TranslationInfo } from './utils'
 
@@ -11,6 +12,11 @@ const collectionStr = [...Object.values(Script), ...Object.keys(TranslationInfo)
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: `/help/:catchAll(.*)`, // or just  /help/.* without the capture
+      name: 'help',
+      component: HelpView,
+    },
     {
       path: `/:collection(${collectionStr})`,
       name: 'home',
