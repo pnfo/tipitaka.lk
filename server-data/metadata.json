@@ -1,0 +1,30 @@
+{
+    "/": {
+        "title": "Tipitaka.lk Tripitaka Sri Lanka",
+        "description": "Home Page - Buddha Jayanthi Tripitaka Sri Lanka and Translations."
+    },
+    "/bookmarks": {
+        "title": "Bookmarks",
+        "description": "Bookmarked Suttas - Tipitaka.lk Tripitaka Sri Lanka"
+    },
+    "/about": {
+        "title": "Help and About Us",
+        "description": "Help and About Us - Tipitaka.lk Tripitaka Sri Lanka"
+    },
+    "/abbreviations": {
+        "title": "Abbreviations",
+        "description": "Abbreviations of Manuscripts - Tipitaka.lk Tripitaka Sri Lanka"
+    },
+    "/search": {
+        "title": "“%s” Search Results",
+        "description": "Results for the Search “%s” in Tipitaka.lk - The Tripitaka Sri Lanka"
+    },
+    "/book": {
+        "title": "%s Book Contents",
+        "description": "Contents of the Book %s - Tipitaka.lk Tripitaka Sri Lanka"
+    },
+    "/key-placeholder": {
+        "title": "%s",
+        "description": "Contents of “%s” in Tipitaka.lk - The Tripitaka Sri Lanka"
+    }
+}

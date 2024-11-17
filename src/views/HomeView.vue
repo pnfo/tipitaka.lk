@@ -34,15 +34,15 @@ onMounted(async () => {
 <template>
   <div class="m-1 h-[calc(100vh-70px)] overflow-y-auto">
       
-      <h1 class="text-7xl text-center my-6 text-yellow-700 dark:text-yellow-400 font-mono font-bold">tipitaka.lk</h1>
+      <h1 class="text-5xl text-center my-5 text-yellow-700 dark:text-yellow-400 font-mono font-bold">tipitaka.lk</h1>
 
-      <ul class="mx-2 mt-4 list-[circle] list-inside">
+      <ul class="p-3 list-[circle] list-inside">
         <li>Type your search terms into the search box at the top.</li>
         <li>To browse the Sutta list in a hierarchy, tap the <MenuIcon class="inline text-blue-500" size="20" /> icon, then select a Sutta.</li>
         <li>To change the display script, open the settings by tapping the <SettingsIcon class="inline text-blue-500" size="20" /> icon in the top right corner.</li>
       </ul>
 
-      <div v-if="isScript(collection)" class="p-4 space-y-6 text-gray-800 dark:text-gray-200 leading-relaxed">
+      <div v-if="isScript(collection)" class="p-3 space-y-6 text-gray-800 dark:text-gray-200 leading-relaxed text-justify">
         <p>
           The Tipitaka was first written down in Sri Lanka over 2,000 years ago on ancient palm-leaf manuscripts. For centuries, these manuscripts were preserved and protected by monastic communities in various temples and forest hermitages across the country.
         </p>

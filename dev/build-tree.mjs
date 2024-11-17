@@ -4,7 +4,7 @@ import { rootNodes, typeToInt } from '../src/utils.js'
 import { convert, Script } from '../src/pali-converter/index.js';
 
 const db = new Database('../server-data/text.db', { fileMustExist: true });
-db.pragma('journal_mode = WAL');
+//db.pragma('journal_mode = WAL');
 
 const headingByBook = db.prepare('SELECT * FROM pali WHERE type = 1 AND book_id = ?')
 
@@ -138,5 +138,5 @@ dbScripts.exec(`DROP TABLE IF EXISTS tree;
 );`)
 const insertScripts = dbScripts.prepare(`INSERT INTO tree VALUES (${Object.keys(scriptTreeColumns).map(c => '@'+c).join(', ')})`)
 Object.values(tree).forEach(entry => insertScripts.run({ key: entry.key, ...Object.fromEntries(scripts.map(s => [s, convert(entry.text, s, Script.SINH)])) }))
-console.log(`wrote scripts-tree.db with ${Object.values(tree)} rows for ${scripts.length} scripts.`)
+console.log(`wrote scripts-tree.db with ${Object.values(tree).length} rows for ${scripts.length} scripts.`)
 dbScripts.close()

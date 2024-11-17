@@ -57,12 +57,12 @@ onMounted(async () => {
 
       <DropdownButton v-else class="absolute top-2 left-1 z-10" bgColor="gray"
         :items="textStore.tabs.map((t, i) => i).filter(i => i != textStore.activeTab)"
-        :disableDropdown="false" positioningClasses="left-0"
+        :disableDropdown="false" dropdownClasses="left-0 max-w-70" buttonClasses="px-4 py-2 text-white dark:text-black max-w-56 max-h-fit"
         @item-click="(i) => textStore.makeActive(i)">
 
         <template #button>
-          {{ getTabHandleText(textStore.tabs[textStore.activeTab]) }}
-          <XIcon @click="textStore.removeTab(textStore.activeTab)" class="ml-2 hover:text-red-500 cursor-pointer w-5" />
+          <p class="truncate hover:text-clip">{{ getTabHandleText(textStore.tabs[textStore.activeTab]) }}</p>
+          <XIcon @click="textStore.removeTab(textStore.activeTab)" class="ml-2 hover:text-red-500 cursor-pointer min-w-5 w-5" />
         </template>
 
         <template #item="{ item }">

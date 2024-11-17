@@ -156,7 +156,7 @@ func printBox() {
 		{"Suggestions and Errors - path.nirvana@gmail.com", gray},
 		{"┄┄┄┄┄┄┄┄┄┈┈┈", gray},
 		{"You can check if there is a newer version at", gray},
-		{"https://github.com/pathnirvana/tipitaka.lk/releases", gray},
+		{"https://github.com/pnfo/tipitaka.lk/releases", gray},
 	}
 	width := 60
 	boxColor := gray
@@ -217,8 +217,15 @@ var transToScript = map[string]string{
 
 func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		parts := strings.Split(c.Path(), "/")
-		if len(parts) < 2 {
+		path := c.Path()
+		if !strings.HasSuffix(path, "/") { // it is problematic for the split below if tailing / is not present
+			path += "/"
+		}
+		if path == "/" {
+			return returnIndexWithMeta(c, (*metadata)["/"])
+		}
+		parts := strings.Split(path, "/")
+		if len(parts) < 3 {
 			return c.Next()
 		}
 
@@ -235,9 +242,6 @@ func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fi
 		}
 
 		// second part of the path - get meta info from metadata.json
-		if len(parts) == 2 {
-			parts = append(parts, "") // handle the case without the trailing slash /sinh as opposed to /sinh/
-		}
 		pageMetadata, exists := (*metadata)["/"+parts[2]]
 		if !exists {
 			if !slices.Contains(*allKeys, parts[2]) { // check the exisistance of a key and if not return
@@ -261,18 +265,22 @@ func metadataMiddleware(metadata *map[string]PageMetadata, allKeys *[]string) fi
 			pageMetadata.Description = fmt.Sprintf(pageMetadata.Description, param)
 		}
 
-		// Replace placeholders {{title}}.. in your index.html template
-		html, err := os.ReadFile(getPathToFile("dist/index.html"))
-		if err != nil {
-			return err
-		}
-		htmlStr := string(html)
-		htmlStr = strings.ReplaceAll(htmlStr, "{{title}}", pageMetadata.Title)
-		htmlStr = strings.ReplaceAll(htmlStr, "{{description}}", pageMetadata.Description)
-
-		c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
-		return c.SendString(htmlStr)
+		return returnIndexWithMeta(c, pageMetadata)
 	}
+}
+
+// Replace placeholders {{title}}.. in index.html template
+func returnIndexWithMeta(c *fiber.Ctx, meta PageMetadata) error {
+	html, err := os.ReadFile(getPathToFile("dist/index.html"))
+	if err != nil {
+		return err
+	}
+	htmlStr := string(html)
+	htmlStr = strings.ReplaceAll(htmlStr, "{{title}}", meta.Title)
+	htmlStr = strings.ReplaceAll(htmlStr, "{{description}}", meta.Description)
+
+	c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
+	return c.SendString(htmlStr)
 }
 
 func getSuttaNames(key string, script string) string {

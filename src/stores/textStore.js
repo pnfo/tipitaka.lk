@@ -7,7 +7,7 @@ import { convert, Script, isScript } from '@/pali-converter'
 import { useSettingsStore } from '@/stores/savedStore'
 import { TextProcessor } from '../pali-converter';
 
-const pagesPerSection = 4
+const pagesPerSection = 8
 
 export const useTextStore = defineStore('textStore', () => {
     const tabs = reactive([]), activeTab = ref(-1)

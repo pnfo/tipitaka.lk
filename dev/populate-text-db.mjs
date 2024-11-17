@@ -24,6 +24,7 @@ const paliColumns = {
     level: 'INTEGER DEFAULT NULL',
     text: 'TEXT NOT NULL',
     key_offset: 'INTEGER DEFAULT NULL', // adding sparsely populated columns have minimal affect on db size
+    no_audio: 'INTEGER DEFAULT NULL',
 }
 const transColumns = {
     book_id: 'INTEGER NOT NULL',
@@ -49,7 +50,7 @@ const createGenericTable = (tableName, columns) => `
 `
 
 const db = new Database('../server-data/text.db', { fileMustExist: false });
-db.pragma('journal_mode = WAL');
+db.pragma('journal_mode = WAL'); //makes writes to db faster
 
 // write bjt books info
 db.exec(createBookTable)
@@ -57,11 +58,11 @@ const insertBook = db.prepare(`INSERT INTO book VALUES (${questionStr(Object.key
 Object.entries(bjtBooksInfo).forEach(([id, info]) => insertBook.run(id, ...Object.values(info).slice(0, 7)))
 
 // write BJT pali and sin_bjt
-// db.exec(createGenericTable('pali', paliColumns))
-// const insertPali = db.prepare(`INSERT INTO pali VALUES (${questionStr(Object.keys(paliColumns).length)})`)
-// db.exec(createGenericTable('sin_bjt', transColumns))
-// const insertSinh = db.prepare(`INSERT INTO sin_bjt VALUES (${questionStr(Object.keys(transColumns).length)})`)
-// populateBJTText()
+db.exec(createGenericTable('pali', paliColumns))
+const insertPali = db.prepare(`INSERT INTO pali VALUES (${questionStr(Object.keys(paliColumns).length)})`)
+db.exec(createGenericTable('sin_bjt', transColumns))
+const insertSinh = db.prepare(`INSERT INTO sin_bjt VALUES (${questionStr(Object.keys(transColumns).length)})`)
+populateBJTText()
 
 function populateBJTText() {
     const dataInputFolder = '../../tipitaka.lk/public/static/text'
@@ -78,8 +79,8 @@ function populateBJTText() {
             console.assert(paliOnly || page.pali.entries.length == page.sinh.entries.length, `pali and sinh entry counts are different ${filename}:${page.pageNum}`)
             const realPage = page.pageNum + obj.pageOffset + bookInfo.pageNumOffset
             let seq = page.pali.sequenceStart || 0 // mn-1-x has cases where the page is split between two json files - making book/page repeat
-            paliList.push(...page.pali.entries.map(e => [obj.bookId, realPage, seq++, typeToInt[e.type], e.level, e.text, e.keyOffset]))
-            paliList.push(...page.pali.footnotes.map(fn => [obj.bookId, realPage, seq++, typeToInt['footnote'], null, fn.text, null]))
+            paliList.push(...page.pali.entries.map(e => [obj.bookId, realPage, seq++, typeToInt[e.type], e.level, e.text, e.keyOffset, e.noAudio == true ? 1 : null]))
+            paliList.push(...page.pali.footnotes.map(fn => [obj.bookId, realPage, seq++, typeToInt['footnote'], null, fn.text, null, null]))
             
             if (paliOnly) continue
             seq = page.sinh.sequenceStart || 0 // Note: there would be a gap in seq number of mn-1-2.json first page
@@ -115,4 +116,5 @@ function populateAlignedText(collName) {
 }
 
 db.exec('VACUUM;')
+db.pragma('journal_mode = DELETE'); // delete shm/wal files
 db.close()

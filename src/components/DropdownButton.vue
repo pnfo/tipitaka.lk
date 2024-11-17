@@ -13,9 +13,9 @@
     <!-- Dropdown Menu -->
     <div
       v-if="isOpen && items.length && !disableDropdown"
-      class="absolute flex flex-col max-w-48 w-max z-10 mt-2 rounded-md shadow-lg bg-[var(--bg-color)] 
+      class="absolute flex flex-col w-max z-10 mt-2 rounded-md shadow-lg bg-[var(--bg-color)] 
       border-solid border-2 border-sky-400 dark:border-sky-700 border-solid border-2 focus:outline-none"
-      :class="positioningClasses">
+      :class="dropdownClasses">
 
       
         <button v-for="(item, index) in items"
@@ -49,7 +49,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  positioningClasses: { // positioning for the dropdown
+  dropdownClasses: { // positioning for the dropdown
     type: String,
     default: 'right-0',
   },

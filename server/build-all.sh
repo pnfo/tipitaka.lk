@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 # brew install x86_64-unknown-linux-gnu
 
 # The name of your Go program (without the .go extension)
-PROGRAM_NAME="tipitaka_lk_new"
+PROGRAM_NAME="open_tipitaka_lk"
 export CGO_ENABLED=1
 
 # Platforms and architectures to build for

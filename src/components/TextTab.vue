@@ -111,8 +111,8 @@ const collectionScripts = computed(() => tab.value.collections.map(coll => getSc
         <thead class="sticky top-0">
           <tr class="flex gap-5">
             <td v-for="(collName, i) in tab.collections" :key="i" class="relative flex-1" :class="isSmHidden(i)">
-                <DropdownButton class="absolute top-1 right-1" bgColor="green"
-                  :items="tab.collections.filter(c => c != collName)"
+                <DropdownButton class="absolute top-0 right-1" bgColor="green"
+                  :items="tab.collections.filter(c => c != collName)" dropdownClasses="right-0 max-w-70"
                   :disableDropdown="settingsStore.windowXY.X > 640"
                   @item-click="(coll) => tab.xsVisibleCollection = tab.collections.indexOf(coll)">
 
@@ -129,7 +129,7 @@ const collectionScripts = computed(() => tab.value.collections.map(coll => getSc
           </tr>
         </thead>
         <tbody>
-          <tr class="flex gap-5">
+          <tr class="flex gap-5 mt-10 sm:mt-0">
             <td v-for="(collName, i) in tab.collections" :key="i" class="flex-1" :class="isSmHidden(i)">
               <VAlert v-if="collectionStatuses[i].type != 'success'" :border="true" :color="collectionStatuses[i].type">
                 <div>{{ collectionStatuses[i].text }}</div>

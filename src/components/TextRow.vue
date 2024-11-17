@@ -12,13 +12,13 @@ const props = defineProps({
 </script>
 
 <template>
-    <div :class="`${row.type} script-${script}`" :level="row.level" class="html" v-html="row.text">
+    <div :class="`${row.type} script-${script}`" :level="row.level" v-html="row.text" class="html break-words" style="overflow-wrap: anywhere;">
     </div>
 </template>
 
 <style scoped>
 /** Need to use em instead of rem because dynamic font-size is set at td */
-.text { font-size: 1.1em; line-height: 130%; word-break: break-word;  /*white-space: pre-wrap;*/ }
+/* .text { font-size: 1.1em; line-height: 130%; word-break: break-word;  } */
 
 .heading { @apply font-bold text-orange-800 dark:text-orange-300 text-center; }
 .heading[level="5"] { @apply text-4xl } /* sn-2 */

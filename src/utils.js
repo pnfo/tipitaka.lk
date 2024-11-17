@@ -1,10 +1,9 @@
 import { Script, isScript } from "./pali-converter/index.js" //dev scripts complain without index.js here
 
-const rootNodeCommon = { leaf: 0, seq: 0, translations: ['sin_bjt'], }
+const rootNodeCommon = { leaf: 0, seq: 0, translations: 'sin_bjt', }
 export const rootNodes = { // page can be found in firstPageId in bookinfo, default seq of 0 is good enough
     'vp': { key: 'vp', text: 'විනයපිටක', level: 7, book_id: 1, parent: '', page: 25, nextKey: 'vp-prj', ...rootNodeCommon }, 
-    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', page: 15, nextKey: 'dn', ...rootNodeCommon,
-        open: true, children: ['dn', 'mn', 'sn', 'an', 'kn'] },
+    'sp': { key: 'sp', text: 'සුත්තපිටක', level: 7, book_id: 10, parent: '', page: 15, nextKey: 'dn', ...rootNodeCommon, open: true,  },
     'ap': { key: 'ap', text: 'අභිධම්මපිටක', level: 7, book_id: 45, parent: '', page: 37, nextKey: 'ap-dhs', ...rootNodeCommon },
 
     'dn': { key: 'dn', text: 'දීඝනිකාය', level: 6, book_id: 10, parent: 'sp', page: 15, nextKey: 'dn-1', ...rootNodeCommon },

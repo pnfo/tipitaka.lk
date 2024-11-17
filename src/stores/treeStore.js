@@ -3,10 +3,9 @@ import { reactive } from 'vue';
 import { queryDb, rootNodes } from '../utils';
 
 export const useTreeStore = defineStore('treeStore', () => {
-    const nodes = reactive(rootNodes);
-    const addRowToNodes = (row) => {
-        row.translations = row.translations.split(',')
-        nodes[row.key] = row
+    const nodes = reactive({});
+    function init() {
+        addRowsToNodes(Object.values(rootNodes))
     }
     const addRowsToNodes = (rows) => {
         rows.forEach(row => { // first add the rows to nodes
@@ -16,7 +15,9 @@ export const useTreeStore = defineStore('treeStore', () => {
         rows.forEach(row => { // then update children in nodes - the order of the returned rows important
             if (!row.parent) return // root nodes
             if (nodes[row.parent].children) {
-                nodes[row.parent].children.push(row.key);
+                if (!nodes[row.parent].children.includes(row.key)) { // this check might not be necessary, but wouldn't hurt incase the child was loaded twice
+                    nodes[row.parent].children.push(row.key);
+                }
             } else {
                 nodes[row.parent].children = [row.key];
             }
@@ -62,6 +63,7 @@ export const useTreeStore = defineStore('treeStore', () => {
 
     return {
         nodes,
+        init,
         getChildren,
         openUpto,
     };

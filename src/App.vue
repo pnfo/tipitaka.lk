@@ -22,6 +22,7 @@ settingsStore.loadSettings()
 import { useTreeStore } from '@/stores/treeStore'
 import { Script } from '@/pali-converter'
 const treeStore = useTreeStore()
+treeStore.init() // add rootnodes to tree
 const rootTreeNodes = computed(() => Object.values(treeStore.nodes).filter(node => !node.parent))
 
 const searchTerm = ref('')
@@ -102,7 +103,7 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
 
       <!-- Left Tree View -->
       <div :class="isLeftNavOpen ? 'w-72 min-w-72' : 'w-0'" 
-        class="absolute lg:static shadow-xl top-0 left-0 z-10 bg-[var(--bg-color)] h-[calc(100vh-50px)] overflow-y-auto transition-all duration-300">
+        class="absolute lg:static shadow-xl top-0 left-0 z-20 bg-[var(--bg-color)] h-[calc(100vh-50px)] overflow-y-auto transition-all duration-300">
         <div class="flex flex-col text-nowrap ml-3 my-2 text-base" :class="`script-${settingsStore.settings.paliScript}`">
           <TreeNode v-for="(node, i) in rootTreeNodes" :key="i" :id="node.key" />
         </div>
@@ -123,7 +124,7 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
             <MoonIcon v-else class="ml-2"></MoonIcon>
           </button>
 
-          <DropdownButton class="right-nav-item" bgColor="none" buttonClasses="" positioningClasses="right-10"
+          <DropdownButton class="right-nav-item" bgColor="none" buttonClasses="" dropdownClasses="right-10 max-w-48"
             :items="Object.values(Script)" :disableDropdown="false"
             @item-click="(script) => changeScript(script)">
             
@@ -154,7 +155,7 @@ onUnmounted(() => window.removeEventListener('resize', settingsStore.updateWindo
           </div>
           
 
-          <DropdownButton v-if="availableTranslations.length" class="right-nav-item" bgColor="none" buttonClasses="" positioningClasses="right-0"
+          <DropdownButton v-if="availableTranslations.length" class="right-nav-item" bgColor="none" buttonClasses="" dropdownClasses="right-0 max-w-48"
             :items="availableTranslations" :disableDropdown="false"
             @item-click="(trans) => addTranslation(trans)">
             
